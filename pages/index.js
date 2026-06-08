@@ -361,8 +361,8 @@ export default function Home() {
                                       </div>
                                     </div>
                                     <div className="flex justify-between items-center text-xs text-gray-400 mb-1.5">
-                                      <span>{cur.pct}% completado</span>
-                                      {hoursLeft!==null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
+                                      {cur.no_progress ? <span>{cur.hours_played}h jugadas</span> : <span>{cur.pct}% completado</span>}
+                                      {!cur.no_progress && hoursLeft!==null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
                                     </div>
                                     {!cur.no_progress && <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                                       <div className={`h-full rounded-full transition-all ${progressColor(cur.pct)}`} style={{width:`${cur.pct}%`}}></div>
@@ -440,8 +440,8 @@ export default function Home() {
                               <div className="space-y-1 text-xs mb-2">
                                 {[
                                   ['Horas jugadas', `${g.hours_played}h`],
-                                  g.hltb_main && ['Historia (HLTB)', `${g.hltb_main}h`],
-                                  g.hltb_main && ['Restantes', `~${Math.max(0,g.hltb_main-g.hours_played).toFixed(0)}h`],
+                                  !g.no_progress && g.hltb_main && ['Historia (HLTB)', `${g.hltb_main}h`],
+                                  !g.no_progress && g.hltb_main && ['Restantes', `~${Math.max(0,g.hltb_main-g.hours_played).toFixed(0)}h`],
                                 ].filter(Boolean).map(([label,val]) => (
                                   <div key={label} className="flex justify-between">
                                     <span className="text-gray-500">{label}</span>
