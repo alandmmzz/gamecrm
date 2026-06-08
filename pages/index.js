@@ -108,6 +108,36 @@ export default function Home() {
     setSaving(false)
   }
 
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshProgress, setRefreshProgress] = useState('')
+
+  const refreshCovers = async () => {
+    if (!selectedFriend) return
+    const games = selectedFriend.games || []
+    const missing = games.filter(g => !g.cover_url)
+    if (!missing.length) { setRefreshProgress('Todos los juegos ya tienen portada ✓'); setTimeout(() => setRefreshProgress(''), 3000); return }
+    setRefreshing(true)
+    for (let i = 0; i < missing.length; i++) {
+      const g = missing[i]
+      setRefreshProgress(`Buscando ${i+1}/${missing.length}: ${g.title}...`)
+      try {
+        const r = await fetch('/api/gameinfo?title=' + encodeURIComponent(g.title))
+        const info = await r.json()
+        if (info.cover_url || info.description) {
+          await fetch('/api/games', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: g.id, cover_url: info.cover_url || null, description: info.description || null }),
+          })
+        }
+      } catch {}
+    }
+    await fetchFriends()
+    setRefreshing(false)
+    setRefreshProgress('¡Listo! ✓')
+    setTimeout(() => setRefreshProgress(''), 3000)
+  }
+
   const deleteFriend = async (id) => {
     if (!confirm('¿Eliminar este amigo y todos sus juegos?')) return
     await fetch(`/api/friends?id=${id}`, { method: 'DELETE' })
@@ -367,12 +397,15 @@ export default function Home() {
                             <div className="font-medium text-white">{selectedFriend.name}</div>
                             <div className="text-xs text-gray-500">@{selectedFriend.username}</div>
                           </div>
+                          <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
+                            className="text-gray-600 hover:text-blue-400 text-xs px-2 py-1 rounded border border-white/5 hover:border-blue-500/20 transition-colors disabled:opacity-50">🔄</button>
                           <button onClick={() => deleteFriend(selectedFriend.id)} title="Eliminar"
                             className="text-gray-600 hover:text-red-400 text-xs px-2 py-1 rounded border border-white/5 hover:border-red-500/20 transition-colors">🗑️</button>
                         </div>
                       )
                     })()}
 
+                    {refreshProgress && <div className="text-xs text-purple-400 mb-3">{refreshProgress}</div>}
                     {activeGames.length>0 && (
                       <>
                         <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Jugando ahora</div>
