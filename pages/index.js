@@ -219,8 +219,8 @@ export default function Home() {
   }
 
   const selectedFriend = friends.find(f => f.id === selected)
-  const activeGames = selectedFriend?.games?.filter(g => g.status === 'playing') || []
-  const history = selectedFriend?.games?.filter(g => g.status !== 'playing') || []
+  const activeGames = (selectedFriend?.games?.filter(g => g.status === 'playing') || []).sort((a,b) => (b.hours_played||0)-(a.hours_played||0))
+  const history = (selectedFriend?.games?.filter(g => g.status !== 'playing') || []).sort((a,b) => { const da = b.finished_at||b.started_at||b.created_at||''; const db = a.finished_at||a.started_at||a.created_at||''; return da.localeCompare(db) })
   const allGames = friends.flatMap(f => (f.games||[]).map(g => ({...g, friendName:f.name, friendIdx:friends.findIndex(x=>x.id===f.id)})))
   const playing = friends.filter(f => f.games?.some(g => g.status==='playing')).length
   const totalHours = allGames.reduce((s,g) => s+(g.hours_played||0), 0)
