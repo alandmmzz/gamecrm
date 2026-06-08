@@ -18,6 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [expandedDescs, setExpandedDescs] = useState({})
+  const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha'
 
   // Friend form
   const [fName, setFName] = useState('')
@@ -203,7 +204,9 @@ export default function Home() {
   }
 
   const selectedFriend = friends.find(f => f.id === selected)
-  const activeGames = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=>(b.hours_played||0)-(a.hours_played||0))
+  const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : (b.hours_played||0)-(a.hours_played||0))
+  const activeGames = allActive.filter(g => !g.no_progress)
+  const recurringGames = allActive.filter(g => g.no_progress)
   const history = (selectedFriend?.games?.filter(g => g.status!=='playing')||[]).sort((a,b)=>{
     const da = b.finished_at||b.started_at||b.created_at||''
     const db = a.finished_at||a.started_at||a.created_at||''
@@ -355,10 +358,36 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Recurring games badges */}
+                {recurringGames.length>0 && (
+                  <div className="mb-6">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Juegos recurrentes</div>
+                    <div className="flex flex-wrap gap-2">
+                      {recurringGames.map(g=>(
+                        <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:'rgba(255,255,255,0.03)'}}>
+                          {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                          <span className="text-sm text-gray-300">{g.title}</span>
+                          <span className="text-xs text-gray-600">{g.hours_played}h</span>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
+                            <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Active games */}
                 {activeGames.length>0 && (
                   <>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Jugando ahora</div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">En progreso</div>
+                      <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
+                        <button onClick={()=>setSortOrder('hours')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='hours'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Horas</button>
+                        <button onClick={()=>setSortOrder('alpha')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='alpha'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>A–Z</button>
+                      </div>
+                    </div>
                     <div className="space-y-3 mb-8">
                       {activeGames.map(g=>(
                         <div key={g.id} className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
