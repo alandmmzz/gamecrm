@@ -689,7 +689,7 @@ export default function Home() {
                   <textarea value={estimateDesc} onChange={e => setEstimateDesc(e.target.value)}
                     placeholder={'ej. "Acabo de terminar el segundo boss, conseguí el mapa del tercer mundo y desbloqueé el fast travel"'}
                     rows={4}
-                    className={inputCls + ' resize-none'} />
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 resize-none" />
                 </div>
                 <button onClick={runEstimate} disabled={estimating || !estimateDesc.trim()}
                   className="w-full py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg transition-colors mb-3">
