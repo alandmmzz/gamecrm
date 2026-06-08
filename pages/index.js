@@ -18,6 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [expandedGames, setExpandedGames] = useState({})
+  const [collapsedFriends, setCollapsedFriends] = useState({})
 
   // Friend form
   const [fName, setFName] = useState('')
@@ -332,10 +333,12 @@ export default function Home() {
                       const color = COLOR_MAP[COLORS[idx%COLORS.length]]
                       const actives = f.games?.filter(g => g.status==='playing') || []
                       return (
-                        <div key={f.id} onClick={() => setSelected(selected===f.id?null:f.id)}
-                          className={`rounded-xl border p-4 cursor-pointer transition-all ${selected===f.id?'border-purple-500/50 bg-purple-900/10':'border-white/5 hover:border-white/10'}`}
+                        <div key={f.id}
+                          className={`rounded-xl border transition-all ${selected===f.id?'border-purple-500/50 bg-purple-900/10':'border-white/5'}`}
                           style={{background:selected===f.id?undefined:'rgba(255,255,255,0.02)'}}>
-                          <div className="flex items-center gap-3 mb-3">
+                          {/* Header row — always visible */}
+                          <div className="flex items-center gap-3 p-4 cursor-pointer"
+                            onClick={() => setSelected(selected===f.id?null:f.id)}>
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
                               {initials(f.name)}
                             </div>
@@ -346,33 +349,43 @@ export default function Home() {
                                 {statusLabel(f.status)} · {f.games?.length||0} juego{f.games?.length!==1?'s':''}
                               </div>
                             </div>
+                            <button
+                              onClick={e => { e.stopPropagation(); setCollapsedFriends(p=>({...p,[f.id]:!p[f.id]})) }}
+                              className="text-gray-600 hover:text-gray-300 text-xs px-1.5 py-0.5 rounded transition-colors flex-shrink-0">
+                              {collapsedFriends[f.id] ? '▸' : '▾'}
+                            </button>
                           </div>
-                          {actives.length>0 ? (
-                            <div className="space-y-2">
-                              {actives.map(cur => {
-                                const hoursLeft = cur.hltb_main ? Math.max(0, cur.hltb_main-(cur.hours_played||0)) : null
-                                return (
-                                  <div key={cur.id} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)'}}>
-                                    <div className="flex items-center gap-2.5 mb-2">
-                                      {cur.cover_url && <img src={cur.cover_url} alt={cur.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                                      <div className="flex-1 min-w-0">
-                                        <div className="text-xs text-gray-500 mb-0.5">Jugando</div>
-                                        <div className="font-medium text-white text-sm truncate">{cur.title}</div>
+                          {/* Collapsible games */}
+                          {!collapsedFriends[f.id] && (
+                            <div className="px-4 pb-4">
+                              {actives.length>0 ? (
+                                <div className="space-y-2">
+                                  {actives.map(cur => {
+                                    const hoursLeft = cur.hltb_main ? Math.max(0, cur.hltb_main-(cur.hours_played||0)) : null
+                                    return (
+                                      <div key={cur.id} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)'}}>
+                                        <div className="flex items-center gap-2.5 mb-2">
+                                          {cur.cover_url && <img src={cur.cover_url} alt={cur.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                                          <div className="flex-1 min-w-0">
+                                            <div className="text-xs text-gray-500 mb-0.5">Jugando</div>
+                                            <div className="font-medium text-white text-sm truncate">{cur.title}</div>
+                                          </div>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs text-gray-400 mb-1.5">
+                                          {cur.no_progress ? <span>{cur.hours_played}h jugadas</span> : <span>{cur.pct}% completado</span>}
+                                          {!cur.no_progress && hoursLeft!==null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
+                                        </div>
+                                        {!cur.no_progress && <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                                          <div className={`h-full rounded-full transition-all ${progressColor(cur.pct)}`} style={{width:`${cur.pct}%`}}></div>
+                                        </div>}
                                       </div>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs text-gray-400 mb-1.5">
-                                      {cur.no_progress ? <span>{cur.hours_played}h jugadas</span> : <span>{cur.pct}% completado</span>}
-                                      {!cur.no_progress && hoursLeft!==null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
-                                    </div>
-                                    {!cur.no_progress && <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                                      <div className={`h-full rounded-full transition-all ${progressColor(cur.pct)}`} style={{width:`${cur.pct}%`}}></div>
-                                    </div>}
-                                  </div>
-                                )
-                              })}
+                                    )
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-600">Sin juego activo</div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="text-xs text-gray-600 px-1">Sin juego activo</div>
                           )}
                         </div>
                       )
