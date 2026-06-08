@@ -5,15 +5,6 @@ export default async function handler(req, res) {
     const { friend_id, title, status, pct, hours_played, hltb_main, hltb_extra, hltb_complete } = req.body
     if (!friend_id || !title) return res.status(400).json({ error: 'friend_id and title required' })
 
-    // Si el juego pasa a "playing", archivamos el anterior juego activo
-    if (status === 'playing') {
-      await supabase
-        .from('games')
-        .update({ status: 'dropped' })
-        .eq('friend_id', friend_id)
-        .eq('status', 'playing')
-    }
-
     const { data, error } = await supabase
       .from('games')
       .insert({
