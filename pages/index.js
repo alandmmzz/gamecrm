@@ -57,9 +57,13 @@ export default function Home() {
       const data = await r.json()
       const results = Array.isArray(data) ? data : []
       setHltbResults(results)
-      // Auto-select best match
-      if (results.length > 0) setSelectedHltb(results[0])
-      else setSelectedHltb(null)
+      if (results.length > 0) {
+        const best = results[0]
+        setSelectedHltb(best)
+        setGName(best.title)
+      } else {
+        setSelectedHltb(null)
+      }
     } catch { setHltbResults([]); setSelectedHltb(null) }
     setHltbLoading(false)
   }
@@ -71,7 +75,7 @@ export default function Home() {
     if (v.length >= 2) {
       setHltbLoading(true)
       clearTimeout(window._hltbTimer)
-      window._hltbTimer = setTimeout(() => searchHltb(v), 700)
+      window._hltbTimer = setTimeout(() => searchHltb(v), 800)
     }
   }
 

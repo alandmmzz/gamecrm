@@ -17,7 +17,9 @@ export default async function handler(req, res) {
         max_tokens: 400,
         messages: [{
           role: 'user',
-          content: `For the game "${q}", return ONLY a JSON array (no markdown, no extra text) of up to 4 matching games with HowLongToBeat data. Format: [{"title":"...","main":N,"extra":N,"complete":N}]. Hours as numbers. Use your knowledge of typical playtimes.`,
+          content: `You are a HowLongToBeat assistant. The user searched for: "${q}".
+
+Return ONLY a JSON array (no markdown, no extra text) of up to 4 matching games, ordered by relevance — the closest match to the search query MUST be first. Each item: {"title":"exact game title","main":N,"extra":N,"complete":N}. Hours as numbers. Use your knowledge of typical HowLongToBeat playtimes. If unsure about hours, estimate. Return only the JSON array.`,
         }],
       }),
     })
