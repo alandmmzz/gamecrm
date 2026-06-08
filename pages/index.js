@@ -31,6 +31,7 @@ export default function Home() {
   const [gHours, setGHours] = useState('')
   const [gStartedAt, setGStartedAt] = useState('')
   const [gFinishedAt, setGFinishedAt] = useState('')
+  const [gNoProgress, setGNoProgress] = useState(false)
   const [hltbResults, setHltbResults] = useState([])
   const [hltbLoading, setHltbLoading] = useState(false)
   const [selectedHltb, setSelectedHltb] = useState(null)
@@ -90,7 +91,7 @@ export default function Home() {
 
   const resetGameForm = () => {
     setGName(''); setGStatus('playing'); setGPct(0); setGHours('')
-    setGStartedAt(''); setGFinishedAt(''); setSelectedHltb(null)
+    setGStartedAt(''); setGFinishedAt(''); setGNoProgress(false); setSelectedHltb(null)
     setHltbResults([]); setGameInfo(null)
   }
 
@@ -133,6 +134,7 @@ export default function Home() {
         description: gameInfo?.description || null,
         started_at: gStartedAt || null,
         finished_at: gStatus === 'completed' ? (gFinishedAt || null) : null,
+        no_progress: gNoProgress,
       }),
     })
     await fetchFriends()
@@ -153,6 +155,7 @@ export default function Home() {
         hours_played: parseFloat(gHours) || 0,
         started_at: gStartedAt || null,
         finished_at: gStatus === 'completed' ? (gFinishedAt || null) : null,
+        no_progress: gNoProgress,
       }),
     })
     await fetchFriends()
@@ -173,6 +176,7 @@ export default function Home() {
     setGHours(game.hours_played)
     setGStartedAt(game.started_at ? game.started_at.slice(0,10) : '')
     setGFinishedAt(game.finished_at ? game.finished_at.slice(0,10) : '')
+    setGNoProgress(game.no_progress || false)
     setEstimateDesc(''); setEstimateResult(null)
     setModal('editGame')
   }
@@ -330,9 +334,9 @@ export default function Home() {
                                       <span>{cur.pct}% completado</span>
                                       {hoursLeft!==null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
                                     </div>
-                                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                                    {!cur.no_progress && <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                                       <div className={`h-full rounded-full transition-all ${progressColor(cur.pct)}`} style={{width:`${cur.pct}%`}}></div>
-                                    </div>
+                                    </div>}
                                   </div>
                                 )
                               })}
@@ -412,10 +416,12 @@ export default function Home() {
                                   </div>
                                 ))}
                               </div>
+                              {!g.no_progress && <>
                               <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct}%</span></div>
                               <div className="h-2 rounded-full bg-white/5 overflow-hidden">
                                 <div className={`h-full rounded-full ${progressColor(g.pct)}`} style={{width:`${g.pct}%`}}></div>
                               </div>
+                            </>}
                             </div>
                           ))}
                         </div>
@@ -593,6 +599,10 @@ export default function Home() {
                     <input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} />
                   </div>
                 </div>
+                <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                  <input type="checkbox" checked={gNoProgress} onChange={e=>setGNoProgress(e.target.checked)} className="w-4 h-4 rounded accent-purple-500" />
+                  <span className="text-xs text-gray-400">Sin campaña / progreso (ej. Rocket League)</span>
+                </label>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
                   <button onClick={addGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
@@ -635,6 +645,10 @@ export default function Home() {
                     <input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} />
                   </div>
                 </div>
+                <label className="flex items-center gap-2 mb-4 cursor-pointer">
+                  <input type="checkbox" checked={gNoProgress} onChange={e=>setGNoProgress(e.target.checked)} className="w-4 h-4 rounded accent-purple-500" />
+                  <span className="text-xs text-gray-400">Sin campaña / progreso (ej. Rocket League)</span>
+                </label>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
                   <button onClick={updateGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
