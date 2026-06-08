@@ -28,11 +28,16 @@ export default function Home() {
   const [gStatus, setGStatus] = useState('playing')
   const [gPct, setGPct] = useState(0)
   const [gHours, setGHours] = useState('')
+  const [gStartedAt, setGStartedAt] = useState('')
+  const [gFinishedAt, setGFinishedAt] = useState('')
   const [hltbResults, setHltbResults] = useState([])
   const [hltbLoading, setHltbLoading] = useState(false)
   const [selectedHltb, setSelectedHltb] = useState(null)
   const [editGame, setEditGame] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [gameInfo, setGameInfo] = useState(null)
+  const [gameInfoLoading, setGameInfoLoading] = useState(false)
+  const [expandedGames, setExpandedGames] = useState({})
 
   // AI estimate
   const [estimateDesc, setEstimateDesc] = useState('')
@@ -61,6 +66,13 @@ export default function Home() {
         const best = results[0]
         setSelectedHltb(best)
         setGName(best.title)
+        // Fetch cover + description in background
+        setGameInfoLoading(true)
+        setGameInfo(null)
+        fetch(`/api/gameinfo?title=${encodeURIComponent(best.title)}`)
+          .then(r => r.json())
+          .then(info => { setGameInfo(info); setGameInfoLoading(false) })
+          .catch(() => setGameInfoLoading(false))
       } else {
         setSelectedHltb(null)
       }
@@ -114,10 +126,14 @@ export default function Home() {
         hltb_main: selectedHltb?.main || null,
         hltb_extra: selectedHltb?.extra || null,
         hltb_complete: selectedHltb?.complete || null,
+        cover_url: gameInfo?.cover_url || null,
+        description: gameInfo?.description || null,
+        started_at: gStartedAt || null,
+        finished_at: gStatus === 'completed' ? (gFinishedAt || null) : null,
       }),
     })
     await fetchFriends()
-    setModal(null); setGName(''); setGPct(0); setGHours(''); setSelectedHltb(null); setHltbResults([])
+    setModal(null); setGName(''); setGPct(0); setGHours(''); setSelectedHltb(null); setHltbResults([]); setGameInfo(null); setGStartedAt(''); setGFinishedAt('')
     setSaving(false)
   }
 
@@ -127,7 +143,14 @@ export default function Home() {
     await fetch('/api/games', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editGame.id, status: gStatus, pct: parseInt(gPct) || 0, hours_played: parseFloat(gHours) || 0 }),
+      body: JSON.stringify({
+        id: editGame.id,
+        status: gStatus,
+        pct: parseInt(gPct) || 0,
+        hours_played: parseFloat(gHours) || 0,
+        started_at: gStartedAt || null,
+        finished_at: gStatus === 'completed' ? (gFinishedAt || null) : null,
+      }),
     })
     await fetchFriends()
     setModal(null); setEditGame(null)
@@ -145,6 +168,8 @@ export default function Home() {
     setGStatus(game.status)
     setGPct(game.pct)
     setGHours(game.hours_played)
+    setGStartedAt(game.started_at ? game.started_at.slice(0, 10) : '')
+    setGFinishedAt(game.finished_at ? game.finished_at.slice(0, 10) : '')
     setEstimateDesc('')
     setEstimateResult(null)
     setModal('editGame')
@@ -306,8 +331,13 @@ export default function Home() {
                                 const hoursLeft = cur.hltb_main ? Math.max(0, cur.hltb_main - (cur.hours_played || 0)) : null
                                 return (
                                   <div key={cur.id} className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                                    <div className="text-xs text-gray-500 mb-1">Jugando</div>
-                                    <div className="font-medium text-white text-sm mb-2">{cur.title}</div>
+                                    <div className="flex items-center gap-2.5 mb-2">
+                                      {cur.cover_url && <img src={cur.cover_url} alt={cur.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e => e.target.style.display='none'} />}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-xs text-gray-500 mb-0.5">Jugando</div>
+                                        <div className="font-medium text-white text-sm">{cur.title}</div>
+                                      </div>
+                                    </div>
                                     <div className="flex justify-between items-center text-xs text-gray-400 mb-1.5">
                                       <span>{cur.pct}% completado</span>
                                       {hoursLeft !== null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
@@ -360,17 +390,32 @@ export default function Home() {
                         <div className="space-y-3 mb-4">
                           {activeGames.map(g => (
                             <div key={g.id}>
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <div className="font-medium text-white text-sm">{g.title}</div>
-                                <div className="flex gap-1 flex-shrink-0">
-                                  <button onClick={() => openEstimate(g)} title="Estimar con IA"
-                                    className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
-                                  <button onClick={() => openEditGame(g)}
-                                    className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
-                                  <button onClick={() => deleteGame(g.id)}
-                                    className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
+                              <div className="flex items-start gap-2.5 mb-2">
+                                {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-10 h-14 rounded object-cover flex-shrink-0 mt-0.5" onError={e => e.target.style.display='none'} />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <div className="font-medium text-white text-sm">{g.title}</div>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <button onClick={() => openEstimate(g)} title="Estimar con IA"
+                                        className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
+                                      <button onClick={() => openEditGame(g)}
+                                        className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
+                                      <button onClick={() => deleteGame(g.id)}
+                                        className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
+                                    </div>
+                                  </div>
+                                  {g.started_at && <div className="text-xs text-gray-600 mt-0.5">Desde {new Date(g.started_at).toLocaleDateString('es-CL')}</div>}
                                 </div>
                               </div>
+                              {g.description && (
+                                <div className="mb-2">
+                                  <button onClick={() => setExpandedGames(p => ({ ...p, [g.id]: !p[g.id] }))}
+                                    className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+                                    {expandedGames[g.id] ? '▾' : '▸'} descripción
+                                  </button>
+                                  {expandedGames[g.id] && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{g.description}</p>}
+                                </div>
+                              )}
                               <div className="space-y-1 text-xs mb-2">
                                 {[
                                   ['Horas jugadas', `${g.hours_played}h`],
@@ -401,16 +446,34 @@ export default function Home() {
                     ) : (
                       <div className="space-y-2">
                         {history.map(g => (
-                          <div key={g.id} className="flex items-center gap-2.5 group">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm text-gray-300 truncate">{g.title}</div>
-                              <div className="text-xs text-gray-600">{g.hours_played}h · {new Date(g.created_at).toLocaleDateString('es-CL')}</div>
+                          <div key={g.id} className="group">
+                            <div className="flex items-center gap-2.5">
+                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-7 h-9 rounded object-cover flex-shrink-0" onError={e => e.target.style.display='none'} />}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-sm text-gray-300 truncate">{g.title}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${gameStatusBadge(g.status)}`}>{gameStatusLabel(g.status)}</span>
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {g.hours_played}h
+                                  {g.started_at && ` · desde ${new Date(g.started_at).toLocaleDateString('es-CL')}`}
+                                  {g.finished_at && ` · terminado ${new Date(g.finished_at).toLocaleDateString('es-CL')}`}
+                                </div>
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <button onClick={() => openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
+                                <button onClick={() => deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${gameStatusBadge(g.status)}`}>{gameStatusLabel(g.status)}</span>
-                              <button onClick={() => openEditGame(g)} className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-400 text-xs transition-all">✏️</button>
-                              <button onClick={() => deleteGame(g.id)} className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 text-xs transition-all">✕</button>
-                            </div>
+                            {g.description && (
+                              <div className="ml-9 mt-1">
+                                <button onClick={() => setExpandedGames(p => ({ ...p, [g.id]: !p[g.id] }))}
+                                  className="text-xs text-gray-600 hover:text-gray-400 transition-colors flex items-center gap-1">
+                                  {expandedGames[g.id] ? '▾' : '▸'} descripción
+                                </button>
+                                {expandedGames[g.id] && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{g.description}</p>}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -526,7 +589,7 @@ export default function Home() {
                     <option value="dropped">Abandonado</option>
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">% Completado</label>
                     <input type="number" min="0" max="100" value={gPct} onChange={e => setGPct(e.target.value)} className={inputCls} />
@@ -536,6 +599,25 @@ export default function Home() {
                     <input type="number" min="0" step="0.5" value={gHours} onChange={e => setGHours(e.target.value)} placeholder="ej. 12.5" className={inputCls} />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Fecha inicio</label>
+                    <input type="date" value={gStartedAt} onChange={e => setGStartedAt(e.target.value)} className={inputCls} />
+                  </div>
+                  {gStatus === 'completed' && (
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Fecha fin</label>
+                      <input type="date" value={gFinishedAt} onChange={e => setGFinishedAt(e.target.value)} className={inputCls} />
+                    </div>
+                  )}
+                </div>
+                {gameInfo?.cover_url && (
+                  <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                    <img src={gameInfo.cover_url} alt="" className="w-6 h-8 rounded object-cover" onError={e => e.target.style.display='none'} />
+                    <span>Portada encontrada ✓</span>
+                  </div>
+                )}
+                {gameInfoLoading && <div className="text-xs text-gray-600 mb-3">Buscando portada...</div>}
                 <div className="flex gap-2 justify-end">
                   <button onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors">Cancelar</button>
                   <button onClick={addGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg transition-colors">
@@ -566,7 +648,7 @@ export default function Home() {
                     <option value="dropped">Abandonado</option>
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">% Completado</label>
                     <input type="number" min="0" max="100" value={gPct} onChange={e => setGPct(e.target.value)} className={inputCls} />
@@ -575,6 +657,18 @@ export default function Home() {
                     <label className="block text-xs text-gray-500 mb-1">Horas jugadas</label>
                     <input type="number" min="0" step="0.5" value={gHours} onChange={e => setGHours(e.target.value)} className={inputCls} />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Fecha inicio</label>
+                    <input type="date" value={gStartedAt} onChange={e => setGStartedAt(e.target.value)} className={inputCls} />
+                  </div>
+                  {gStatus === 'completed' && (
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Fecha fin</label>
+                      <input type="date" value={gFinishedAt} onChange={e => setGFinishedAt(e.target.value)} className={inputCls} />
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2 justify-end">
                   <button onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200 transition-colors">Cancelar</button>
