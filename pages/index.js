@@ -13,12 +13,11 @@ const initials = (n) => n.split(' ').map(w => w[0]).join('').toUpperCase().slice
 
 export default function Home() {
   const [friends, setFriends] = useState([])
+  const [view, setView] = useState('list') // 'list' | 'profile' | 'activity'
   const [selected, setSelected] = useState(null)
-  const [tab, setTab] = useState('friends')
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
-  const [expandedGames, setExpandedGames] = useState({})
-  const [collapsedFriends, setCollapsedFriends] = useState({})
+  const [expandedDescs, setExpandedDescs] = useState({})
 
   // Friend form
   const [fName, setFName] = useState('')
@@ -40,6 +39,8 @@ export default function Home() {
   const [saving, setSaving] = useState(false)
   const [gameInfo, setGameInfo] = useState(null)
   const [gameInfoLoading, setGameInfoLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshProgress, setRefreshProgress] = useState('')
 
   // AI estimate
   const [estimateDesc, setEstimateDesc] = useState('')
@@ -65,24 +66,17 @@ export default function Home() {
       if (results.length > 0) {
         setSelectedHltb(results[0])
         setGName(results[0].title)
-        setGameInfoLoading(true)
-        setGameInfo(null)
+        setGameInfoLoading(true); setGameInfo(null)
         fetch(`/api/gameinfo?title=${encodeURIComponent(results[0].title)}`)
-          .then(r => r.json())
-          .then(info => { setGameInfo(info); setGameInfoLoading(false) })
+          .then(r => r.json()).then(info => { setGameInfo(info); setGameInfoLoading(false) })
           .catch(() => setGameInfoLoading(false))
-      } else {
-        setSelectedHltb(null)
-      }
+      } else { setSelectedHltb(null) }
     } catch { setHltbResults([]); setSelectedHltb(null) }
     setHltbLoading(false)
   }
 
   const handleGNameChange = (v) => {
-    setGName(v)
-    setSelectedHltb(null)
-    setHltbResults([])
-    setGameInfo(null)
+    setGName(v); setSelectedHltb(null); setHltbResults([]); setGameInfo(null)
     if (v.length >= 2) {
       setHltbLoading(true)
       clearTimeout(window._hltbTimer)
@@ -92,106 +86,50 @@ export default function Home() {
 
   const resetGameForm = () => {
     setGName(''); setGStatus('playing'); setGPct(0); setGHours('')
-    setGStartedAt(''); setGFinishedAt(''); setGNoProgress(false); setSelectedHltb(null)
-    setHltbResults([]); setGameInfo(null)
+    setGStartedAt(''); setGFinishedAt(''); setGNoProgress(false)
+    setSelectedHltb(null); setHltbResults([]); setGameInfo(null)
   }
 
   const addFriend = async () => {
     if (!fName.trim()) return
     setSaving(true)
-    await fetch('/api/friends', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: fName.trim(), username: fUser.trim(), status: fStatus }),
-    })
+    await fetch('/api/friends', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: fName.trim(), username: fUser.trim(), status: fStatus }) })
     await fetchFriends()
-    setModal(null); setFName(''); setFUser(''); setFStatus('offline')
-    setSaving(false)
-  }
-
-  const [refreshing, setRefreshing] = useState(false)
-  const [refreshProgress, setRefreshProgress] = useState('')
-
-  const refreshCovers = async () => {
-    if (!selectedFriend) return
-    const games = selectedFriend.games || []
-    const missing = games.filter(g => !g.cover_url)
-    if (!missing.length) { setRefreshProgress('Todos los juegos ya tienen portada ✓'); setTimeout(() => setRefreshProgress(''), 3000); return }
-    setRefreshing(true)
-    for (let i = 0; i < missing.length; i++) {
-      const g = missing[i]
-      setRefreshProgress(`Buscando ${i+1}/${missing.length}: ${g.title}...`)
-      try {
-        const r = await fetch('/api/gameinfo?title=' + encodeURIComponent(g.title))
-        const info = await r.json()
-        if (info.cover_url || info.description) {
-          await fetch('/api/games', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: g.id, cover_url: info.cover_url || null, description: info.description || null }),
-          })
-        }
-      } catch {}
-    }
-    await fetchFriends()
-    setRefreshing(false)
-    setRefreshProgress('¡Listo! ✓')
-    setTimeout(() => setRefreshProgress(''), 3000)
+    setModal(null); setFName(''); setFUser(''); setFStatus('offline'); setSaving(false)
   }
 
   const deleteFriend = async (id) => {
     if (!confirm('¿Eliminar este amigo y todos sus juegos?')) return
     await fetch(`/api/friends?id=${id}`, { method: 'DELETE' })
-    setSelected(null)
-    await fetchFriends()
+    setSelected(null); setView('list'); await fetchFriends()
   }
 
   const addGame = async () => {
     if (!gName.trim() || !selected) return
     setSaving(true)
-    await fetch('/api/games', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        friend_id: selected,
-        title: gName.trim(),
-        status: gStatus,
-        pct: parseInt(gPct) || 0,
-        hours_played: parseFloat(gHours) || 0,
-        hltb_main: selectedHltb?.main || null,
-        hltb_extra: selectedHltb?.extra || null,
-        hltb_complete: selectedHltb?.complete || null,
-        cover_url: gameInfo?.cover_url || null,
-        description: gameInfo?.description || null,
-        started_at: gStartedAt || null,
-        finished_at: gStatus === 'completed' ? (gFinishedAt || null) : null,
+        friend_id: selected, title: gName.trim(), status: gStatus,
+        pct: parseInt(gPct)||0, hours_played: parseFloat(gHours)||0,
+        hltb_main: selectedHltb?.main||null, hltb_extra: selectedHltb?.extra||null, hltb_complete: selectedHltb?.complete||null,
+        cover_url: gameInfo?.cover_url||null, description: gameInfo?.description||null,
+        started_at: gStartedAt||null, finished_at: gStatus==='completed'?(gFinishedAt||null):null,
         no_progress: gNoProgress,
-      }),
-    })
-    await fetchFriends()
-    setModal(null); resetGameForm()
-    setSaving(false)
+      }) })
+    await fetchFriends(); setModal(null); resetGameForm(); setSaving(false)
   }
 
   const updateGame = async () => {
     if (!editGame) return
     setSaving(true)
-    await fetch('/api/games', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+    await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        id: editGame.id,
-        status: gStatus,
-        pct: parseInt(gPct) || 0,
-        hours_played: parseFloat(gHours) || 0,
-        started_at: gStartedAt || null,
-        finished_at: gStatus === 'completed' ? (gFinishedAt || null) : null,
+        id: editGame.id, status: gStatus, pct: parseInt(gPct)||0, hours_played: parseFloat(gHours)||0,
+        started_at: gStartedAt||null, finished_at: gStatus==='completed'?(gFinishedAt||null):null,
         no_progress: gNoProgress,
-      }),
-    })
-    await fetchFriends()
-    setModal(null); setEditGame(null)
-    setSaving(false)
+      }) })
+    await fetchFriends(); setModal(null); setEditGame(null); setSaving(false)
   }
 
   const deleteGame = async (id) => {
@@ -201,31 +139,23 @@ export default function Home() {
   }
 
   const openEditGame = (game) => {
-    setEditGame(game)
-    setGStatus(game.status)
-    setGPct(game.pct)
-    setGHours(game.hours_played)
+    setEditGame(game); setGStatus(game.status); setGPct(game.pct); setGHours(game.hours_played)
     setGStartedAt(game.started_at ? game.started_at.slice(0,10) : '')
     setGFinishedAt(game.finished_at ? game.finished_at.slice(0,10) : '')
     setGNoProgress(game.no_progress || false)
-    setEstimateDesc(''); setEstimateResult(null)
-    setModal('editGame')
+    setEstimateDesc(''); setEstimateResult(null); setModal('editGame')
   }
 
   const openEstimate = (game) => {
-    setEditGame(game); setEstimateDesc(''); setEstimateResult(null)
-    setModal('estimate')
+    setEditGame(game); setEstimateDesc(''); setEstimateResult(null); setModal('estimate')
   }
 
   const runEstimate = async () => {
     if (!estimateDesc.trim() || !editGame) return
     setEstimating(true); setEstimateResult(null)
     try {
-      const r = await fetch('/api/estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game: editGame.title, description: estimateDesc, hltb_main: editGame.hltb_main, hltb_extra: editGame.hltb_extra, hltb_complete: editGame.hltb_complete }),
-      })
+      const r = await fetch('/api/estimate', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ game: editGame.title, description: estimateDesc, hltb_main: editGame.hltb_main, hltb_extra: editGame.hltb_extra, hltb_complete: editGame.hltb_complete }) })
       setEstimateResult(await r.json())
     } catch {}
     setEstimating(false)
@@ -234,11 +164,8 @@ export default function Home() {
   const applyEstimate = async () => {
     if (!estimateResult || !editGame) return
     setSaving(true)
-    await fetch('/api/games', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editGame.id, pct: estimateResult.pct, hours_played: estimateResult.hours_played }),
-    })
+    await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: editGame.id, pct: estimateResult.pct, hours_played: estimateResult.hours_played }) })
     await fetchFriends(); setModal(null); setSaving(false)
   }
 
@@ -253,12 +180,38 @@ export default function Home() {
     }
   }
 
+  const refreshCovers = async () => {
+    const f = friends.find(x => x.id === selected)
+    if (!f) return
+    const missing = (f.games||[]).filter(g => !g.cover_url)
+    if (!missing.length) { setRefreshProgress('Todos los juegos ya tienen portada ✓'); setTimeout(()=>setRefreshProgress(''),3000); return }
+    setRefreshing(true)
+    for (let i = 0; i < missing.length; i++) {
+      const g = missing[i]
+      setRefreshProgress(`Buscando ${i+1}/${missing.length}: ${g.title}...`)
+      try {
+        const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
+        const info = await r.json()
+        if (info.cover_url || info.description) {
+          await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ id: g.id, cover_url: info.cover_url||null, description: info.description||null }) })
+        }
+      } catch {}
+    }
+    await fetchFriends(); setRefreshing(false)
+    setRefreshProgress('¡Listo! ✓'); setTimeout(()=>setRefreshProgress(''),3000)
+  }
+
   const selectedFriend = friends.find(f => f.id === selected)
-  const activeGames = (selectedFriend?.games?.filter(g => g.status === 'playing') || []).sort((a,b) => (b.hours_played||0)-(a.hours_played||0))
-  const history = (selectedFriend?.games?.filter(g => g.status !== 'playing') || []).sort((a,b) => { const da = b.finished_at||b.started_at||b.created_at||''; const db = a.finished_at||a.started_at||a.created_at||''; return da.localeCompare(db) })
-  const allGames = friends.flatMap(f => (f.games||[]).map(g => ({...g, friendName:f.name, friendIdx:friends.findIndex(x=>x.id===f.id)})))
-  const playing = friends.filter(f => f.games?.some(g => g.status==='playing')).length
-  const totalHours = allGames.reduce((s,g) => s+(g.hours_played||0), 0)
+  const activeGames = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=>(b.hours_played||0)-(a.hours_played||0))
+  const history = (selectedFriend?.games?.filter(g => g.status!=='playing')||[]).sort((a,b)=>{
+    const da = b.finished_at||b.started_at||b.created_at||''
+    const db = a.finished_at||a.started_at||a.created_at||''
+    return da.localeCompare(db)
+  })
+  const allGames = friends.flatMap(f=>(f.games||[]).map(g=>({...g,friendName:f.name,friendIdx:friends.findIndex(x=>x.id===f.id)})))
+  const playing = friends.filter(f=>f.games?.some(g=>g.status==='playing')).length
+  const totalHours = allGames.reduce((s,g)=>s+(g.hours_played||0),0)
 
   const statusDot = (s) => s==='online'?'bg-green-400':s==='away'?'bg-amber-400':'bg-gray-500'
   const statusLabel = (s) => s==='online'?'Online':s==='away'?'Ausente':'Offline'
@@ -266,7 +219,6 @@ export default function Home() {
   const gameLabel = (s) => s==='playing'?'Jugando':s==='completed'?'Completado':'Abandonado'
   const progressColor = (p) => p<33?'bg-teal-500':p<66?'bg-amber-500':'bg-purple-500'
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CL') : null
-
   const inputCls = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50"
 
   return (
@@ -277,22 +229,22 @@ export default function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
       </Head>
       <div className="min-h-screen" style={{fontFamily:'Inter,sans-serif'}}>
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto px-4 py-8">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
               <span className="text-2xl">🎮</span>
               <h1 className="text-xl font-semibold text-white">Game CRM</h1>
             </div>
             <div className="flex gap-2">
-              {selected && (
-                <button onClick={() => { resetGameForm(); setModal('game') }}
+              {view==='profile' && selected && (
+                <button onClick={()=>{resetGameForm();setModal('game')}}
                   className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors">
                   + Juego
                 </button>
               )}
-              <button onClick={() => { setFName(''); setFUser(''); setFStatus('offline'); setModal('friend') }}
+              <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
                 className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors">
                 + Amigo
               </button>
@@ -301,7 +253,7 @@ export default function Home() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-8">
-            {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando ahora'},{num:`${Math.round(totalHours)}h`,label:'Horas totales'}].map(s => (
+            {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando ahora'},{num:`${Math.round(totalHours)}h`,label:'Horas totales'}].map(s=>(
               <div key={s.label} className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.03)'}}>
                 <div className="text-2xl font-semibold text-white">{s.num}</div>
                 <div className="text-xs text-gray-500 mt-1">{s.label}</div>
@@ -311,239 +263,215 @@ export default function Home() {
 
           {/* Tabs */}
           <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
-            {['friends','activity'].map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-lg text-sm transition-all ${tab===t?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300'}`}>
-                {t==='friends'?'Amigos':'Actividad'}
+            {['list','activity'].map(t=>(
+              <button key={t} onClick={()=>{setView(t);setSelected(null)}}
+                className={`px-4 py-2 rounded-lg text-sm transition-all ${(view===t||(view==='profile'&&t==='list'))?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300'}`}>
+                {t==='list'?'Amigos':'Actividad'}
               </button>
             ))}
           </div>
 
-          {/* Friends tab */}
-          {tab==='friends' && (
-            <div className="flex gap-4">
-              <div className="flex-1">
-                {loading ? (
-                  <div className="text-gray-500 text-sm py-8 text-center">Cargando...</div>
-                ) : friends.length===0 ? (
-                  <div className="text-center py-16 text-gray-500"><div className="text-4xl mb-3">👾</div>Sin amigos aún.</div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {friends.map((f, idx) => {
-                      const color = COLOR_MAP[COLORS[idx%COLORS.length]]
-                      const actives = f.games?.filter(g => g.status==='playing') || []
-                      return (
-                        <div key={f.id}
-                          className={`rounded-xl border transition-all ${selected===f.id?'border-purple-500/50 bg-purple-900/10':'border-white/5'}`}
-                          style={{background:selected===f.id?undefined:'rgba(255,255,255,0.02)'}}>
-                          {/* Header row — always visible */}
-                          <div className="flex items-center gap-3 p-4 cursor-pointer"
-                            onClick={() => setSelected(selected===f.id?null:f.id)}>
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
-                              {initials(f.name)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-white text-sm">{f.name}</div>
-                              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                <span className={`w-1.5 h-1.5 rounded-full ${statusDot(f.status)}`}></span>
-                                {statusLabel(f.status)} · {f.games?.length||0} juego{f.games?.length!==1?'s':''}
-                              </div>
-                            </div>
-                            <button
-                              onClick={e => { e.stopPropagation(); setCollapsedFriends(p=>({...p,[f.id]:!p[f.id]})) }}
-                              className="text-gray-600 hover:text-gray-300 text-xs px-1.5 py-0.5 rounded transition-colors flex-shrink-0">
-                              {collapsedFriends[f.id] ? '▸' : '▾'}
-                            </button>
-                          </div>
-                          {/* Collapsible games */}
-                          {!collapsedFriends[f.id] && (
-                            <div className="px-4 pb-4">
-                              {actives.length>0 ? (
-                                <div className="space-y-2">
-                                  {actives.map(cur => {
-                                    const hoursLeft = cur.hltb_main ? Math.max(0, cur.hltb_main-(cur.hours_played||0)) : null
-                                    return (
-                                      <div key={cur.id} className="rounded-lg p-3" style={{background:'rgba(255,255,255,0.04)'}}>
-                                        <div className="flex items-center gap-2.5 mb-2">
-                                          {cur.cover_url && <img src={cur.cover_url} alt={cur.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                                          <div className="flex-1 min-w-0">
-                                            <div className="text-xs text-gray-500 mb-0.5">Jugando</div>
-                                            <div className="font-medium text-white text-sm truncate">{cur.title}</div>
-                                          </div>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs text-gray-400 mb-1.5">
-                                          {cur.no_progress ? <span>{cur.hours_played}h jugadas</span> : <span>{cur.pct}% completado</span>}
-                                          {!cur.no_progress && hoursLeft!==null && <span className="text-purple-400">~{Math.round(hoursLeft)}h restantes</span>}
-                                        </div>
-                                        {!cur.no_progress && <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                                          <div className={`h-full rounded-full transition-all ${progressColor(cur.pct)}`} style={{width:`${cur.pct}%`}}></div>
-                                        </div>}
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              ) : (
-                                <div className="text-xs text-gray-600">Sin juego activo</div>
-                              )}
-                            </div>
-                          )}
+          {/* Friends list */}
+          {(view==='list') && (
+            loading ? <div className="text-gray-500 text-sm py-8 text-center">Cargando...</div>
+            : friends.length===0 ? <div className="text-center py-16 text-gray-500"><div className="text-4xl mb-3">👾</div>Sin amigos aún.</div>
+            : (
+              <div className="space-y-2">
+                {friends.map((f,idx)=>{
+                  const color = COLOR_MAP[COLORS[idx%COLORS.length]]
+                  const actives = f.games?.filter(g=>g.status==='playing')||[]
+                  const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
+                  return (
+                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile')}}
+                      className="flex items-center gap-4 p-4 rounded-xl border border-white/5 cursor-pointer hover:border-white/10 transition-all"
+                      style={{background:'rgba(255,255,255,0.02)'}}>
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
+                        {initials(f.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-white">{f.name}</div>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusDot(f.status)}`}></span>
+                          {statusLabel(f.status)}
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-sm text-white font-medium">{f.games?.length||0} juego{f.games?.length!==1?'s':''}</div>
+                        <div className="text-xs text-gray-500">{Math.round(totalH)}h totales</div>
+                      </div>
+                      {actives.length>0 && (
+                        <div className="flex-shrink-0 flex items-center gap-1.5 max-w-xs overflow-hidden">
+                          {actives.slice(0,2).map(g=>(
+                            <div key={g.id} className="flex items-center gap-1.5 bg-purple-900/30 border border-purple-500/20 rounded-lg px-2 py-1">
+                              {g.cover_url && <img src={g.cover_url} alt="" className="w-4 h-5 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                              <span className="text-xs text-purple-300 truncate max-w-20">{g.title}</span>
+                            </div>
+                          ))}
+                          {actives.length>2 && <span className="text-xs text-gray-600">+{actives.length-2}</span>}
+                        </div>
+                      )}
+                      <span className="text-gray-600 text-sm flex-shrink-0">›</span>
+                    </div>
+                  )
+                })}
               </div>
+            )
+          )}
 
-              {/* Detail panel */}
-              {selectedFriend && (
-                <div className="w-80 flex-shrink-0">
-                  <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
-                    {(() => {
-                      const idx = friends.findIndex(f => f.id===selected)
-                      const color = COLOR_MAP[COLORS[idx%COLORS.length]]
-                      return (
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-medium ${color.bg} ${color.text}`}>
-                            {initials(selectedFriend.name)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-white">{selectedFriend.name}</div>
-                            <div className="text-xs text-gray-500">@{selectedFriend.username}</div>
-                          </div>
-                          <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
-                            className="text-gray-600 hover:text-blue-400 text-xs px-2 py-1 rounded border border-white/5 hover:border-blue-500/20 transition-colors disabled:opacity-50">🔄</button>
-                          <button onClick={() => deleteFriend(selectedFriend.id)} title="Eliminar"
-                            className="text-gray-600 hover:text-red-400 text-xs px-2 py-1 rounded border border-white/5 hover:border-red-500/20 transition-colors">🗑️</button>
-                        </div>
-                      )
-                    })()}
+          {/* Profile view */}
+          {view==='profile' && selectedFriend && (() => {
+            const idx = friends.findIndex(f=>f.id===selected)
+            const color = COLOR_MAP[COLORS[idx%COLORS.length]]
+            const totalH = (selectedFriend.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
+            return (
+              <div>
+                {/* Back + profile header */}
+                <button onClick={()=>{setView('list');setSelected(null)}} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
+                  ‹ Volver
+                </button>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
+                    {initials(selectedFriend.name)}
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500">@{selectedFriend.username}</span>
+                      <span className="text-gray-700">·</span>
+                      <span className={`flex items-center gap-1 text-xs text-gray-500`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(selectedFriend.status)}`}></span>
+                        {statusLabel(selectedFriend.status)}
+                      </span>
+                      <span className="text-gray-700">·</span>
+                      <span className="text-xs text-gray-500">{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {refreshProgress && <span className="text-xs text-purple-400 self-center">{refreshProgress}</span>}
+                    <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
+                      className="text-gray-600 hover:text-blue-400 text-sm px-2 py-1 rounded border border-white/5 hover:border-blue-500/20 transition-colors disabled:opacity-50">🔄</button>
+                    <button onClick={()=>deleteFriend(selectedFriend.id)}
+                      className="text-gray-600 hover:text-red-400 text-sm px-2 py-1 rounded border border-white/5 hover:border-red-500/20 transition-colors">🗑️</button>
+                  </div>
+                </div>
 
-                    {refreshProgress && <div className="text-xs text-purple-400 mb-3">{refreshProgress}</div>}
-                    {activeGames.length>0 && (
-                      <>
-                        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Jugando ahora</div>
-                        <div className="space-y-4 mb-4">
-                          {activeGames.map(g => (
-                            <div key={g.id}>
-                              <div className="flex gap-2.5 mb-2">
-                                {g.cover_url && (
-                                  <img src={g.cover_url} alt={g.title} className="w-12 h-16 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-1 mb-1">
-                                    <div className="font-medium text-white text-sm leading-tight">{g.title}</div>
-                                    <div className="flex gap-1 flex-shrink-0">
-                                      <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
-                                      <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
-                                      <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
-                                    </div>
-                                  </div>
-                                  {g.started_at && <div className="text-xs text-gray-600">Desde {fmtDate(g.started_at)}</div>}
+                {/* Active games */}
+                {activeGames.length>0 && (
+                  <>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Jugando ahora</div>
+                    <div className="space-y-3 mb-8">
+                      {activeGames.map(g=>(
+                        <div key={g.id} className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
+                          <div className="flex gap-3">
+                            {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="font-medium text-white">{g.title}</div>
+                                <div className="flex gap-1 flex-shrink-0">
+                                  <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
+                                  <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
+                                  <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
                                 </div>
                               </div>
+                              {g.started_at && <div className="text-xs text-gray-600 mb-2">Desde {fmtDate(g.started_at)}</div>}
                               {g.description && (
                                 <div className="mb-2">
-                                  <button onClick={()=>setExpandedGames(p=>({...p,[g.id]:!p[g.id]}))}
-                                    className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 transition-colors">
-                                    {expandedGames[g.id]?'▾':'▸'} descripción
+                                  <button onClick={()=>setExpandedDescs(p=>({...p,[g.id]:!p[g.id]}))} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 transition-colors">
+                                    {expandedDescs[g.id]?'▾':'▸'} descripción
                                   </button>
-                                  {expandedGames[g.id] && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{g.description}</p>}
+                                  {expandedDescs[g.id] && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{g.description}</p>}
                                 </div>
                               )}
-                              <div className="space-y-1 text-xs mb-2">
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
                                 {[
                                   ['Horas jugadas', `${g.hours_played}h`],
                                   !g.no_progress && g.hltb_main && ['Historia (HLTB)', `${g.hltb_main}h`],
                                   !g.no_progress && g.hltb_main && ['Restantes', `~${Math.max(0,g.hltb_main-g.hours_played).toFixed(0)}h`],
-                                ].filter(Boolean).map(([label,val]) => (
+                                ].filter(Boolean).map(([label,val])=>(
                                   <div key={label} className="flex justify-between">
                                     <span className="text-gray-500">{label}</span>
                                     <span className={label==='Restantes'?'text-purple-400 font-medium':'text-gray-300'}>{val}</span>
                                   </div>
                                 ))}
                               </div>
-                              {!g.no_progress && <>
-                              <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct}%</span></div>
-                              <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                                <div className={`h-full rounded-full ${progressColor(g.pct)}`} style={{width:`${g.pct}%`}}></div>
-                              </div>
-                            </>}
+                              {!g.no_progress && (
+                                <>
+                                  <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct}%</span></div>
+                                  <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                                    <div className={`h-full rounded-full ${progressColor(g.pct)}`} style={{width:`${g.pct}%`}}></div>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                          ))}
-                        </div>
-                        <div className="border-t border-white/5 mb-4"></div>
-                      </>
-                    )}
-
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Historial</div>
-                    {history.length===0 ? (
-                      <div className="text-xs text-gray-600">Sin juegos anteriores.</div>
-                    ) : (
-                      <div className="space-y-3">
-                        {history.map(g => (
-                          <div key={g.id} className="group">
-                            <div className="flex items-center gap-2.5">
-                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-7 h-9 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-sm text-gray-300 truncate">{g.title}</span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                  {g.hours_played}h
-                                  {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
-                                  {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
-                                </div>
-                              </div>
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
-                                <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
-                              </div>
-                            </div>
-                            {g.description && (
-                              <div className={g.cover_url?'ml-9 mt-1':'mt-1'}>
-                                <button onClick={()=>setExpandedGames(p=>({...p,[g.id]:!p[g.id]}))}
-                                  className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1 transition-colors">
-                                  {expandedGames[g.id]?'▾':'▸'} descripción
-                                </button>
-                                {expandedGames[g.id] && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{g.description}</p>}
-                              </div>
-                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* History */}
+                {history.length>0 && (
+                  <>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Historial</div>
+                    <div className="space-y-2">
+                      {history.map(g=>(
+                        <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:'rgba(255,255,255,0.02)'}}>
+                          {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm text-gray-200">{g.title}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-0.5">
+                              {g.hours_played}h
+                              {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
+                              {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✏️</button>
+                            <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {(!activeGames.length && !history.length) && (
+                  <div className="text-center py-16 text-gray-500">Sin juegos registrados aún.</div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Activity tab */}
-          {tab==='activity' && (
+          {view==='activity' && (
             <div className="space-y-2">
-              {allGames.length===0 ? (
-                <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
-              ) : allGames.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(g => {
-                const color = COLOR_MAP[COLORS[g.friendIdx%COLORS.length]]
-                return (
-                  <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:'rgba(255,255,255,0.02)'}}>
-                    {g.cover_url
-                      ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                      : <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${color.bg} ${color.text}`}>{initials(g.friendName)}</div>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-gray-300"><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
-                      <div className="text-xs text-gray-600">
-                        {g.hours_played}h
-                        {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
-                        {g.finished_at && ` · terminado ${fmtDate(g.finished_at)}`}
+              {allGames.length===0
+                ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
+                : allGames.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(g=>{
+                    const color = COLOR_MAP[COLORS[g.friendIdx%COLORS.length]]
+                    return (
+                      <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:'rgba(255,255,255,0.02)'}}>
+                        {g.cover_url
+                          ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                          : <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${color.bg} ${color.text}`}>{initials(g.friendName)}</div>
+                        }
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-gray-300"><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
+                          <div className="text-xs text-gray-600">
+                            {g.hours_played}h
+                            {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
+                            {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
+                          </div>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
                       </div>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
-                  </div>
-                )
-              })}
+                    )
+                  })
+              }
             </div>
           )}
 
@@ -555,50 +483,31 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setModal(null)}>
           <div className="rounded-2xl border border-white/10 p-6 w-full max-w-sm max-h-screen overflow-y-auto" style={{background:'#1a1a24'}}>
 
-            {/* Add friend */}
             {modal==='friend' && (
               <>
                 <h2 className="text-base font-semibold text-white mb-4">Agregar amigo</h2>
-                <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">Nombre</label>
-                  <input value={fName} onChange={e=>setFName(e.target.value)} placeholder="ej. Rodrigo" className={inputCls} />
-                </div>
-                <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">Usuario / alias</label>
-                  <input value={fUser} onChange={e=>setFUser(e.target.value)} placeholder="ej. rod_plays" className={inputCls} />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-xs text-gray-500 mb-1">Estado</label>
+                <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Nombre</label><input value={fName} onChange={e=>setFName(e.target.value)} placeholder="ej. Rodrigo" className={inputCls} /></div>
+                <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Usuario</label><input value={fUser} onChange={e=>setFUser(e.target.value)} placeholder="ej. rod_plays" className={inputCls} /></div>
+                <div className="mb-4"><label className="block text-xs text-gray-500 mb-1">Estado</label>
                   <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className={inputCls}>
-                    <option value="online">Online</option>
-                    <option value="away">Ausente</option>
-                    <option value="offline">Offline</option>
+                    <option value="online">Online</option><option value="away">Ausente</option><option value="offline">Offline</option>
                   </select>
                 </div>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
-                  <button onClick={addFriend} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
-                    {saving?'Guardando...':'Agregar'}
-                  </button>
+                  <button onClick={addFriend} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Agregar'}</button>
                 </div>
               </>
             )}
 
-            {/* Add game */}
             {modal==='game' && (
               <>
                 <h2 className="text-base font-semibold text-white mb-1">Agregar juego</h2>
                 <p className="text-xs text-gray-500 mb-4">Para {selectedFriend?.name}</p>
-                <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">Juego</label>
+                <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Juego</label>
                   <input value={gName} onChange={e=>handleGNameChange(e.target.value)} placeholder="Nombre del juego..." className={inputCls} autoComplete="off" />
                 </div>
-                {hltbLoading && (
-                  <div className="mb-2 text-xs text-gray-500 flex items-center gap-2">
-                    <span className="inline-block w-3 h-3 border border-gray-500 border-t-purple-400 rounded-full animate-spin"></span>
-                    Buscando...
-                  </div>
-                )}
+                {hltbLoading && <div className="mb-2 text-xs text-gray-500 flex items-center gap-2"><span className="inline-block w-3 h-3 border border-gray-500 border-t-purple-400 rounded-full animate-spin"></span>Buscando...</div>}
                 {selectedHltb && (
                   <div className="mb-3 rounded-lg p-3 text-xs space-y-1" style={{background:'rgba(124,92,255,0.08)'}}>
                     <div className="flex items-center justify-between mb-1">
@@ -610,40 +519,25 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-                {gameInfoLoading && <div className="text-xs text-gray-600 mb-2">Buscando portada e info...</div>}
+                {gameInfoLoading && <div className="text-xs text-gray-600 mb-2">Buscando portada...</div>}
                 {gameInfo?.cover_url && (
                   <div className="flex items-center gap-2 mb-3">
                     <img src={gameInfo.cover_url} alt="" className="w-8 h-10 rounded object-cover" onError={e=>e.target.style.display='none'} />
                     <span className="text-xs text-gray-500">Portada encontrada ✓</span>
                   </div>
                 )}
-                <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">Estado</label>
-                  <select value={gStatus} onChange={e=>handleStatusChange(e.target.value, selectedHltb, null)} className={inputCls}>
-                    <option value="playing">Jugando</option>
-                    <option value="completed">Completado</option>
-                    <option value="dropped">Abandonado</option>
+                <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Estado</label>
+                  <select value={gStatus} onChange={e=>handleStatusChange(e.target.value,selectedHltb,null)} className={inputCls}>
+                    <option value="playing">Jugando</option><option value="completed">Completado</option><option value="dropped">Abandonado</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">% Completado</label>
-                    <input type="number" min="0" max="100" value={gPct} onChange={e=>setGPct(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Horas jugadas</label>
-                    <input type="number" min="0" step="0.5" value={gHours} onChange={e=>setGHours(e.target.value)} placeholder="ej. 12" className={inputCls} />
-                  </div>
+                  <div><label className="block text-xs text-gray-500 mb-1">% Completado</label><input type="number" min="0" max="100" value={gPct} onChange={e=>setGPct(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">Horas jugadas</label><input type="number" min="0" step="0.5" value={gHours} onChange={e=>setGHours(e.target.value)} placeholder="ej. 12" className={inputCls} /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Fecha inicio</label>
-                    <input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':'Fecha fin (si aplica)'}</label>
-                    <input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} />
-                  </div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div><label className="block text-xs text-gray-500 mb-1">Fecha inicio</label><input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':'Fecha fin'}</label><input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} /></div>
                 </div>
                 <label className="flex items-center gap-2 mb-4 cursor-pointer">
                   <input type="checkbox" checked={gNoProgress} onChange={e=>setGNoProgress(e.target.checked)} className="w-4 h-4 rounded accent-purple-500" />
@@ -651,45 +545,27 @@ export default function Home() {
                 </label>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
-                  <button onClick={addGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
-                    {saving?'Guardando...':'Guardar'}
-                  </button>
+                  <button onClick={addGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Guardar'}</button>
                 </div>
               </>
             )}
 
-            {/* Edit game */}
             {modal==='editGame' && editGame && (
               <>
                 <h2 className="text-base font-semibold text-white mb-1">Editar juego</h2>
                 <p className="text-xs text-gray-500 mb-4">{editGame.title}</p>
-                <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">Estado</label>
-                  <select value={gStatus} onChange={e=>handleStatusChange(e.target.value, null, editGame)} className={inputCls}>
-                    <option value="playing">Jugando</option>
-                    <option value="completed">Completado</option>
-                    <option value="dropped">Abandonado</option>
+                <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Estado</label>
+                  <select value={gStatus} onChange={e=>handleStatusChange(e.target.value,null,editGame)} className={inputCls}>
+                    <option value="playing">Jugando</option><option value="completed">Completado</option><option value="dropped">Abandonado</option>
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">% Completado</label>
-                    <input type="number" min="0" max="100" value={gPct} onChange={e=>setGPct(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Horas jugadas</label>
-                    <input type="number" min="0" step="0.5" value={gHours} onChange={e=>setGHours(e.target.value)} className={inputCls} />
-                  </div>
+                  <div><label className="block text-xs text-gray-500 mb-1">% Completado</label><input type="number" min="0" max="100" value={gPct} onChange={e=>setGPct(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">Horas jugadas</label><input type="number" min="0" step="0.5" value={gHours} onChange={e=>setGHours(e.target.value)} className={inputCls} /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Fecha inicio</label>
-                    <input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':'Fecha fin (si aplica)'}</label>
-                    <input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} />
-                  </div>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div><label className="block text-xs text-gray-500 mb-1">Fecha inicio</label><input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':'Fecha fin'}</label><input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} /></div>
                 </div>
                 <label className="flex items-center gap-2 mb-4 cursor-pointer">
                   <input type="checkbox" checked={gNoProgress} onChange={e=>setGNoProgress(e.target.checked)} className="w-4 h-4 rounded accent-purple-500" />
@@ -697,20 +573,16 @@ export default function Home() {
                 </label>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
-                  <button onClick={updateGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
-                    {saving?'Guardando...':'Actualizar'}
-                  </button>
+                  <button onClick={updateGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Actualizar'}</button>
                 </div>
               </>
             )}
 
-            {/* AI Estimate */}
             {modal==='estimate' && editGame && (
               <>
                 <h2 className="text-base font-semibold text-white mb-1">✨ Estimar con IA</h2>
                 <p className="text-xs text-gray-500 mb-4">{editGame.title}</p>
-                <div className="mb-3">
-                  <label className="block text-xs text-gray-500 mb-1">¿Dónde estás en el juego?</label>
+                <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">¿Dónde estás en el juego?</label>
                   <textarea value={estimateDesc} onChange={e=>setEstimateDesc(e.target.value)}
                     placeholder='ej. "Acabo de terminar el segundo boss y tengo el mapa del tercer mundo"'
                     rows={4} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 resize-none" />
@@ -723,21 +595,15 @@ export default function Home() {
                   <div className="rounded-lg p-3 mb-3 space-y-2" style={{background:'rgba(124,92,255,0.08)'}}>
                     <div className="text-purple-400 text-xs font-medium mb-1">Resultado</div>
                     {[['% Completado',`${estimateResult.pct}%`],['Horas jugadas',`~${estimateResult.hours_played}h`],['Horas restantes',`~${estimateResult.hours_remaining}h`]].map(([l,v])=>(
-                      <div key={l} className="flex justify-between text-xs">
-                        <span className="text-gray-500">{l}</span>
-                        <span className="text-gray-200 font-medium">{v}</span>
-                      </div>
+                      <div key={l} className="flex justify-between text-xs"><span className="text-gray-500">{l}</span><span className="text-gray-200 font-medium">{v}</span></div>
                     ))}
                     {estimateResult.reasoning && <p className="text-xs text-gray-500 italic mt-2 pt-2 border-t border-white/5">{estimateResult.reasoning}</p>}
-                    <button onClick={applyEstimate} disabled={saving}
-                      className="w-full py-1.5 text-xs bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white rounded-lg mt-1">
+                    <button onClick={applyEstimate} disabled={saving} className="w-full py-1.5 text-xs bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white rounded-lg mt-1">
                       {saving?'Aplicando...':'Aplicar al juego'}
                     </button>
                   </div>
                 )}
-                <div className="flex justify-end">
-                  <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cerrar</button>
-                </div>
+                <div className="flex justify-end"><button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cerrar</button></div>
               </>
             )}
 
