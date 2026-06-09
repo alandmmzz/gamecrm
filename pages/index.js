@@ -226,10 +226,11 @@ export default function Home() {
       const r = await fetch('/api/steam?steamid=' + encodeURIComponent(steamId.trim()))
       const data = await r.json()
       if (data.error) { setSteamError(data.error); setSteamLoading(false); return }
-      setSteamGames(data.games || [])
-      // Pre-select all
+      const games = data.games || []
+      setSteamGames(games)
+      // Pre-select all except already existing
       const sel = {}
-      data.games.forEach(g => { sel[g.appid] = true })
+      games.forEach(g => { sel[g.appid] = true })
       setSelectedSteamGames(sel)
     } catch (e) { setSteamError(e.message) }
     setSteamLoading(false)
@@ -239,18 +240,31 @@ export default function Home() {
     const toImport = steamGames.filter(g => selectedSteamGames[g.appid])
     if (!toImport.length || !selected) return
     setSteamImporting(true)
+    const existingGames = selectedFriend?.games || []
     for (let i = 0; i < toImport.length; i++) {
       const g = toImport[i]
-      setSteamProgress(`Importando ${i+1}/${toImport.length}: ${g.title}...`)
+      setSteamProgress(`${i+1}/${toImport.length}: ${g.title}...`)
       try {
-        await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            friend_id: selected, title: g.title,
-            status: 'playing', pct: 0,
-            hours_played: g.hours_played,
-            cover_url: g.cover_url,
-          })
+        const existing = existingGames.find(e => {
+          const a = e.title.toLowerCase().trim(), b = g.title.toLowerCase().trim()
+          return a === b || a.includes(b) || b.includes(a)
         })
+        if (existing) {
+          // Update hours only, keep status and progress
+          await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ id: existing.id, hours_played: g.hours_played })
+          })
+        } else {
+          // Create new
+          await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              friend_id: selected, title: g.title,
+              status: 'playing', pct: 0,
+              hours_played: g.hours_played,
+              cover_url: g.cover_url,
+            })
+          })
+        }
       } catch {}
     }
     await fetchFriends()
@@ -883,7 +897,10 @@ export default function Home() {
             {modal==='steam' && (
               <>
                 <h2 className="text-base font-semibold text-white mb-1">🎮 Importar desde Steam</h2>
-                <p className="text-xs text-gray-500 mb-4">Para {selectedFriend?.name} · El perfil de Steam debe ser público</p>
+                <p className="text-xs text-gray-500 mb-3">Para {selectedFriend?.name} · El perfil de Steam debe ser público</p>
+                <div className="rounded-lg px-3 py-2 mb-4 text-xs text-teal-300 border border-teal-500/20" style={{background:'rgba(93,202,165,0.07)'}}>
+                  Los juegos ya cargados solo actualizarán sus horas jugadas — el estado y progreso no se tocan.
+                </div>
                 <div className="flex gap-2 mb-4">
                   <input value={steamId} onChange={e=>setSteamId(e.target.value)}
                     onKeyDown={e=>e.key==='Enter'&&fetchSteamGames()}
@@ -905,14 +922,21 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="space-y-1 max-h-64 overflow-y-auto mb-4 pr-1">
-                      {steamGames.map(g => (
-                        <label key={g.appid} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
-                          <input type="checkbox" checked={!!selectedSteamGames[g.appid]} onChange={e=>setSelectedSteamGames(p=>({...p,[g.appid]:e.target.checked}))} className="w-4 h-4 rounded accent-purple-500 flex-shrink-0" />
-                          <img src={g.cover_url} alt="" className="w-10 h-6 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                          <span className="text-sm text-gray-300 flex-1 truncate">{g.title}</span>
-                          <span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
-                        </label>
-                      ))}
+                      {steamGames.map(g => {
+                        const existing = (selectedFriend?.games||[]).some(e => {
+                          const a = e.title.toLowerCase().trim(), b = g.title.toLowerCase().trim()
+                          return a === b || a.includes(b) || b.includes(a)
+                        })
+                        return (
+                          <label key={g.appid} className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${existing ? 'opacity-50' : 'hover:bg-white/5'}`}>
+                            <input type="checkbox" checked={!!selectedSteamGames[g.appid]} onChange={e=>setSelectedSteamGames(p=>({...p,[g.appid]:e.target.checked}))} className="w-4 h-4 rounded accent-purple-500 flex-shrink-0" />
+                            <img src={g.cover_url} alt="" className="w-10 h-6 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                            <span className="text-sm text-gray-300 flex-1 truncate">{g.title}</span>
+                            {existing && <span className="text-xs text-teal-600 flex-shrink-0">↑ horas</span>}
+                            <span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
+                          </label>
+                        )
+                      })}
                     </div>
                     {steamProgress && <div className="text-xs text-purple-400 mb-2">{steamProgress}</div>}
                     <div className="flex gap-2 justify-end">
