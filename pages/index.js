@@ -17,6 +17,42 @@ const GENRE_COLORS = [
   '#A78BFA','#34D399','#F59E0B','#F87171','#60A5FA',
 ]
 
+
+function getRoleTitle(games) {
+  const genreMap = {}
+  games.forEach(g => {
+    const hrs = g.hours_played || 0
+    ;(g.genres || []).forEach(genre => {
+      genreMap[genre] = (genreMap[genre] || 0) + hrs
+    })
+  })
+  const top = Object.entries(genreMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g.toLowerCase())
+  if (!top.length) return null
+
+  const total = games.reduce((s,g)=>s+(g.hours_played||0),0)
+
+  // Title based on top genres combo
+  const has = (...gs) => gs.every(g => top.some(t => t.includes(g)))
+  const any = (...gs) => gs.some(g => top.some(t => t.includes(g)))
+
+  if (has('action') && has('rpg')) return { title: 'Espadachín de Mundos Abiertos', icon: '⚔️' }
+  if (has('action') && has('shooter')) return { title: 'Máquina de Guerra', icon: '🔫' }
+  if (has('rpg') && has('strategy')) return { title: 'Gran Estratega', icon: '🧠' }
+  if (has('horror') && has('action')) return { title: 'Cazador de Pesadillas', icon: '💀' }
+  if (has('indie') && has('platformer')) return { title: 'Guardián de los Indies', icon: '🎪' }
+  if (has('adventure') && has('rpg')) return { title: 'Explorador de Leyendas', icon: '🗺️' }
+  if (has('sports') && has('racing')) return { title: 'Atleta Digital', icon: '🏆' }
+  if (has('puzzle') && has('strategy')) return { title: 'Maestro del Ingenio', icon: '🧩' }
+  if (any('rpg')) return total > 500 ? { title: 'Veterano de las RPG', icon: '🧙' } : { title: 'Aprendiz del Rol', icon: '📜' }
+  if (any('action')) return total > 300 ? { title: 'Guerrero Curtido', icon: '🗡️' } : { title: 'Soldado en Entrenamiento', icon: '🪖' }
+  if (any('horror')) return { title: 'Alma Valiente', icon: '👻' }
+  if (any('indie')) return { title: 'Fanático del Indie', icon: '🎮' }
+  if (any('strategy')) return { title: 'Mente Táctica', icon: '♟️' }
+  if (any('adventure')) return { title: 'Espíritu Aventurero', icon: '🌍' }
+  if (any('casual')) return { title: 'Jugador Casual', icon: '🛋️' }
+  return { title: 'Gamer Inclasificable', icon: '🎲' }
+}
+
 function GenreRadarChart({ games }) {
   const genreMap = {}
   games.forEach(g => {
