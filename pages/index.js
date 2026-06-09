@@ -401,6 +401,7 @@ export default function Home() {
             const color = COLOR_MAP[COLORS[idx%COLORS.length]]
             const totalH = (selectedFriend.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
             return (
+              <>
               <div className="flex gap-6 items-start">
                 <div className="flex-1 min-w-0">
                 {/* Back + profile header */}
@@ -552,7 +553,7 @@ export default function Home() {
                   </div>
                 </div>
 
-              </div>{/* end flex row */}
+              </div>
 
               {/* Chart mobile — below games */}
               <div className="md:hidden mt-6">
@@ -561,6 +562,7 @@ export default function Home() {
                   <GenreRadarChart games={selectedFriend?.games||[]} />
                 </div>
               </div>
+            </>
             )
           })()}
 
