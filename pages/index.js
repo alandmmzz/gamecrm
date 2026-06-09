@@ -569,6 +569,29 @@ export default function Home() {
                   <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
                     <GenreRadarChart games={selectedFriend?.games||[]} />
+                    <div className="mt-5 pt-4 border-t border-white/5">
+                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Resumen</div>
+                      {[
+                        { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300' },
+                        { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300' },
+                        { label: 'Abandonados', key: 'dropped',   color: 'bg-red-500/70', badge: 'text-red-300' },
+                      ].map(({ label, key, color, badge }) => {
+                        const count = (selectedFriend?.games||[]).filter(g => g.status === key).length
+                        const total = (selectedFriend?.games||[]).length
+                        const pct = total ? Math.round((count/total)*100) : 0
+                        return (
+                          <div key={key} className="mb-2.5">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-gray-500">{label}</span>
+                              <span className={badge}>{count} <span className="text-gray-600">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${color}`} style={{width:`${pct}%`}}></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -579,6 +602,29 @@ export default function Home() {
                 <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
                   <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
                   <GenreRadarChart games={selectedFriend?.games||[]} />
+                    <div className="mt-5 pt-4 border-t border-white/5">
+                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Resumen</div>
+                      {[
+                        { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300' },
+                        { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300' },
+                        { label: 'Abandonados', key: 'dropped',   color: 'bg-red-500/70', badge: 'text-red-300' },
+                      ].map(({ label, key, color, badge }) => {
+                        const count = (selectedFriend?.games||[]).filter(g => g.status === key).length
+                        const total = (selectedFriend?.games||[]).length
+                        const pct = total ? Math.round((count/total)*100) : 0
+                        return (
+                          <div key={key} className="mb-2.5">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-gray-500">{label}</span>
+                              <span className={badge}>{count} <span className="text-gray-600">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${color}`} style={{width:`${pct}%`}}></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                 </div>
               </div>
             </>
