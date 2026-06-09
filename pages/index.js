@@ -241,38 +241,34 @@ export default function Home() {
               <h1 className="text-xl font-semibold text-white">Game CRM</h1>
             </div>
             <div className="flex gap-2">
-              {view==='profile' && selected && (
-                <button onClick={()=>{resetGameForm();setModal('game')}}
+              {view!=='profile' && (
+                <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
                   className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors">
-                  + Juego
+                  + Amigo
                 </button>
               )}
-              <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
-                className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors">
-                + Amigo
-              </button>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          {view!=='profile' && <div className="grid grid-cols-3 gap-3 mb-8">
             {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando ahora'},{num:`${Math.round(totalHours)}h`,label:'Horas totales'}].map(s=>(
               <div key={s.label} className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.03)'}}>
                 <div className="text-2xl font-semibold text-white">{s.num}</div>
                 <div className="text-xs text-gray-500 mt-1">{s.label}</div>
               </div>
             ))}
-          </div>
+          </div>}
 
           {/* Tabs */}
-          <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
+          {view!=='profile' && <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
             {['list','activity'].map(t=>(
               <button key={t} onClick={()=>{setView(t);setSelected(null)}}
                 className={`px-4 py-2 rounded-lg text-sm transition-all ${(view===t||(view==='profile'&&t==='list'))?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300'}`}>
                 {t==='list'?'Amigos':'Actividad'}
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* Friends list */}
           {(view==='list') && (
@@ -286,34 +282,36 @@ export default function Home() {
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
                   return (
                     <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile')}}
-                      className="flex items-center gap-4 p-4 rounded-xl border border-white/5 cursor-pointer hover:border-white/10 transition-all"
+                      className="p-4 rounded-xl border border-white/5 cursor-pointer hover:border-white/10 transition-all"
                       style={{background:'rgba(255,255,255,0.02)'}}>
-                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
-                        {initials(f.name)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-white">{f.name}</div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${statusDot(f.status)}`}></span>
-                          {statusLabel(f.status)}
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
+                          {initials(f.name)}
                         </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-sm text-white font-medium">{f.games?.length||0} juego{f.games?.length!==1?'s':''}</div>
-                        <div className="text-xs text-gray-500">{Math.round(totalH)}h totales</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-white">{f.name}</div>
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusDot(f.status)}`}></span>
+                            {statusLabel(f.status)}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-sm text-white font-medium">{f.games?.length||0} juego{f.games?.length!==1?'s':''}</div>
+                          <div className="text-xs text-gray-500">{Math.round(totalH)}h</div>
+                        </div>
+                        <span className="text-gray-600 text-sm flex-shrink-0">›</span>
                       </div>
                       {actives.length>0 && (
-                        <div className="flex-shrink-0 flex items-center gap-1.5 max-w-xs overflow-hidden">
-                          {actives.slice(0,2).map(g=>(
+                        <div className="flex flex-wrap gap-1.5 mt-3">
+                          {actives.slice(0,3).map(g=>(
                             <div key={g.id} className="flex items-center gap-1.5 bg-purple-900/30 border border-purple-500/20 rounded-lg px-2 py-1">
                               {g.cover_url && <img src={g.cover_url} alt="" className="w-4 h-5 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                              <span className="text-xs text-purple-300 truncate max-w-20">{g.title}</span>
+                              <span className="text-xs text-purple-300 truncate max-w-24">{g.title}</span>
                             </div>
                           ))}
-                          {actives.length>2 && <span className="text-xs text-gray-600">+{actives.length-2}</span>}
+                          {actives.length>3 && <span className="text-xs text-gray-600 self-center">+{actives.length-3} más</span>}
                         </div>
                       )}
-                      <span className="text-gray-600 text-sm flex-shrink-0">›</span>
                     </div>
                   )
                 })}
@@ -351,6 +349,8 @@ export default function Home() {
                   </div>
                   <div className="flex gap-2">
                     {refreshProgress && <span className="text-xs text-purple-400 self-center">{refreshProgress}</span>}
+                    <button onClick={()=>{resetGameForm();setModal('game')}}
+                      className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">+ Juego</button>
                     <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
                       className="text-gray-600 hover:text-blue-400 text-sm px-2 py-1 rounded border border-white/5 hover:border-blue-500/20 transition-colors disabled:opacity-50">🔄</button>
                     <button onClick={()=>deleteFriend(selectedFriend.id)}
