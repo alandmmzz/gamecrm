@@ -457,8 +457,14 @@ export default function Home() {
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm text-gray-500">@{selectedFriend.username}</span>
-<span className="text-xs text-gray-500">{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
+                      <span className="text-xs text-gray-500">{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
+                    {(()=>{ const role = getRoleTitle(selectedFriend.games||[]); return role ? (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span>{role.icon}</span>
+                        <span className="text-xs font-medium text-purple-400">{role.title}</span>
+                      </div>
+                    ) : null })()}
                   </div>
                   <div className="flex gap-2">
                     {refreshProgress && <span className="text-xs text-purple-400 self-center">{refreshProgress}</span>}
