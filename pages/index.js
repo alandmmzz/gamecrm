@@ -260,18 +260,23 @@ export default function Home() {
   const refreshCovers = async () => {
     const f = friends.find(x => x.id === selected)
     if (!f) return
-    const missing = (f.games||[]).filter(g => !g.cover_url || !g.genres?.length)
-    if (!missing.length) { setRefreshProgress('Todos los juegos ya tienen portada ✓'); setTimeout(()=>setRefreshProgress(''),3000); return }
+    const missing = (f.games||[]).filter(g => !g.genres?.length || !g.cover_url)
+    if (!missing.length) { setRefreshProgress('Todo al día ✓'); setTimeout(()=>setRefreshProgress(''),3000); return }
     setRefreshing(true)
     for (let i = 0; i < missing.length; i++) {
       const g = missing[i]
-      setRefreshProgress(`Buscando ${i+1}/${missing.length}: ${g.title}...`)
+      setRefreshProgress(`${i+1}/${missing.length}: ${g.title}...`)
       try {
         const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
         const info = await r.json()
-        if (info.cover_url || info.description) {
+        if (info.cover_url || info.description || info.genres?.length) {
           await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ id: g.id, cover_url: info.cover_url||null, description: info.description||null }) })
+            body: JSON.stringify({
+              id: g.id,
+              cover_url: info.cover_url || g.cover_url || null,
+              description: info.description || g.description || null,
+              genres: info.genres?.length ? info.genres : (g.genres || []),
+            }) })
         }
       } catch {}
     }
@@ -475,6 +480,13 @@ export default function Home() {
                                 </div>
                               </div>
                               {g.started_at && <div className="text-xs text-gray-600 mb-2">Desde {fmtDate(g.started_at)}</div>}
+                              {g.genres?.length>0 && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {g.genres.map(genre=>(
+                                    <span key={genre} className="text-xs px-2 py-0.5 rounded-full border border-white/10 text-gray-500">{genre}</span>
+                                  ))}
+                                </div>
+                              )}
                               {g.description && (
                                 <div className="mb-2">
                                   <button onClick={()=>setExpandedDescs(p=>({...p,[g.id]:!p[g.id]}))} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 transition-colors">
@@ -529,6 +541,13 @@ export default function Home() {
                               {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
                               {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
                             </div>
+                            {g.genres?.length>0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {g.genres.map(genre=>(
+                                  <span key={genre} className="text-xs px-1.5 py-0.5 rounded-full border border-white/10 text-gray-600">{genre}</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✏️</button>
