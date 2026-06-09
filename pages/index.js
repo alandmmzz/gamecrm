@@ -268,6 +268,26 @@ export default function Home() {
       } catch {}
     }
     await fetchFriends()
+    // Auto-refresh genres for imported games — fetch fresh data first
+    const freshR = await fetch('/api/friends')
+    const freshFriends = await freshR.json()
+    const freshFriend = (freshFriends || []).find(x => x.id === selected)
+    if (freshFriend) {
+      const missing = (freshFriend.games||[]).filter(g => !g.genres?.length || !g.cover_url)
+      for (let i = 0; i < missing.length; i++) {
+        const g = missing[i]
+        setSteamProgress(`Buscando info ${i+1}/${missing.length}: ${g.title}...`)
+        try {
+          const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
+          const info = await r.json()
+          if (info.cover_url || info.description || info.genres?.length) {
+            await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ id: g.id, cover_url: info.cover_url||g.cover_url||null, description: info.description||g.description||null, genres: info.genres?.length ? info.genres : (g.genres||[]) }) })
+          }
+        } catch {}
+      }
+      await fetchFriends()
+    }
     setSteamImporting(false); setSteamProgress(''); setModal(null)
     setSteamId(''); setSteamGames([]); setSelectedSteamGames({})
   }
