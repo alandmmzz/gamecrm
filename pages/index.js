@@ -11,6 +11,82 @@ const COLOR_MAP = {
 }
 const initials = (n) => n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)
 
+
+const GENRE_COLORS = [
+  '#7F77DD','#5DCAA5','#EF9F27','#E07B6A','#5B9BD5',
+  '#A78BFA','#34D399','#F59E0B','#F87171','#60A5FA',
+]
+
+function GenreRadarChart({ games }) {
+  const genreMap = {}
+  games.forEach(g => {
+    const hrs = g.hours_played || 0
+    ;(g.genres || []).forEach(genre => {
+      genreMap[genre] = (genreMap[genre] || 0) + hrs
+    })
+  })
+  const entries = Object.entries(genreMap).sort((a,b)=>b[1]-a[1]).slice(0,8)
+  if (!entries.length) return (
+    <div className="flex items-center justify-center h-48 text-xs text-gray-600">Sin datos de géneros aún</div>
+  )
+  const max = entries[0][1]
+  const cx = 110, cy = 110, r = 80
+  const n = entries.length
+  const points = entries.map(([,val], i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+    const dist = (val / max) * r
+    return { x: cx + dist * Math.cos(angle), y: cy + dist * Math.sin(angle) }
+  })
+  const gridPoints = (factor) => entries.map((_, i) => {
+    const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+    return `${cx + factor * r * Math.cos(angle)},${cy + factor * r * Math.sin(angle)}`
+  }).join(' ')
+  const polyPoints = points.map(p => `${p.x},${p.y}`).join(' ')
+
+  return (
+    <div>
+      <svg viewBox="0 0 220 220" className="w-full max-w-xs mx-auto">
+        {[0.25,0.5,0.75,1].map(f => (
+          <polygon key={f} points={gridPoints(f)} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        ))}
+        {entries.map((_,i) => {
+          const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+          return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+        })}
+        <polygon points={polyPoints} fill="rgba(127,119,221,0.2)" stroke="#7F77DD" strokeWidth="1.5" />
+        {points.map((p,i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill="#7F77DD" />)}
+        {entries.map(([name,val],i) => {
+          const angle = (i / n) * 2 * Math.PI - Math.PI / 2
+          const lx = cx + (r + 18) * Math.cos(angle)
+          const ly = cy + (r + 18) * Math.sin(angle)
+          const anchor = lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle'
+          return (
+            <text key={i} x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" fontSize="8" fill="rgba(255,255,255,0.5)">
+              {name.length > 12 ? name.slice(0,11)+'…' : name}
+            </text>
+          )
+        })}
+      </svg>
+      <div className="mt-3 space-y-1.5">
+        {entries.map(([name,val],i) => (
+          <div key={name} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:GENRE_COLORS[i%GENRE_COLORS.length]}}></div>
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between text-xs mb-0.5">
+                <span className="text-gray-400 truncate">{name}</span>
+                <span className="text-gray-500 flex-shrink-0 ml-2">{Math.round(val)}h</span>
+              </div>
+              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{width:`${(val/max)*100}%`,background:GENRE_COLORS[i%GENRE_COLORS.length]}}></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const [friends, setFriends] = useState([])
   const [view, setView] = useState('list') // 'list' | 'profile' | 'activity'
@@ -114,7 +190,7 @@ export default function Home() {
         friend_id: selected, title: gName.trim(), status: gStatus,
         pct: parseInt(gPct)||0, hours_played: parseFloat(gHours)||0,
         hltb_main: selectedHltb?.main||null, hltb_extra: selectedHltb?.extra||null, hltb_complete: selectedHltb?.complete||null,
-        cover_url: gameInfo?.cover_url||null, description: gameInfo?.description||null,
+        cover_url: gameInfo?.cover_url||null, description: gameInfo?.description||null, genres: gameInfo?.genres||[],
         started_at: gStartedAt||null, finished_at: gStatus==='completed'?(gFinishedAt||null):null,
         no_progress: gNoProgress,
       }) })
@@ -325,7 +401,8 @@ export default function Home() {
             const color = COLOR_MAP[COLORS[idx%COLORS.length]]
             const totalH = (selectedFriend.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
             return (
-              <div>
+              <div className="flex gap-6 items-start">
+                <div className="flex-1 min-w-0">
                 {/* Back + profile header */}
                 <button onClick={()=>{setView('list');setSelected(null)}} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
                   ‹ Volver
@@ -338,13 +415,7 @@ export default function Home() {
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm text-gray-500">@{selectedFriend.username}</span>
-                      <span className="text-gray-700">·</span>
-                      <span className={`flex items-center gap-1 text-xs text-gray-500`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(selectedFriend.status)}`}></span>
-                        {statusLabel(selectedFriend.status)}
-                      </span>
-                      <span className="text-gray-700">·</span>
-                      <span className="text-xs text-gray-500">{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
+<span className="text-xs text-gray-500">{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -471,6 +542,24 @@ export default function Home() {
                 {(!activeGames.length && !history.length) && (
                   <div className="text-center py-16 text-gray-500">Sin juegos registrados aún.</div>
                 )}
+                </div>{/* end main col */}
+
+                {/* Chart sidebar — desktop only */}
+                <div className="hidden md:block w-64 flex-shrink-0 sticky top-8">
+                  <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
+                    <GenreRadarChart games={selectedFriend?.games||[]} />
+                  </div>
+                </div>
+
+              </div>{/* end flex row */}
+
+              {/* Chart mobile — below games */}
+              <div className="md:hidden mt-6">
+                <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
+                  <GenreRadarChart games={selectedFriend?.games||[]} />
+                </div>
               </div>
             )
           })()}
@@ -517,11 +606,7 @@ export default function Home() {
                 <h2 className="text-base font-semibold text-white mb-4">Agregar amigo</h2>
                 <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Nombre</label><input value={fName} onChange={e=>setFName(e.target.value)} placeholder="ej. Rodrigo" className={inputCls} /></div>
                 <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Usuario</label><input value={fUser} onChange={e=>setFUser(e.target.value)} placeholder="ej. rod_plays" className={inputCls} /></div>
-                <div className="mb-4"><label className="block text-xs text-gray-500 mb-1">Estado</label>
-                  <select value={fStatus} onChange={e=>setFStatus(e.target.value)} className={inputCls}>
-                    <option value="online">Online</option><option value="away">Ausente</option><option value="offline">Offline</option>
-                  </select>
-                </div>
+
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
                   <button onClick={addFriend} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Agregar'}</button>
