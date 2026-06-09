@@ -260,7 +260,7 @@ export default function Home() {
   const refreshCovers = async () => {
     const f = friends.find(x => x.id === selected)
     if (!f) return
-    const missing = (f.games||[]).filter(g => !g.cover_url)
+    const missing = (f.games||[]).filter(g => !g.cover_url || !g.genres?.length)
     if (!missing.length) { setRefreshProgress('Todos los juegos ya tienen portada ✓'); setTimeout(()=>setRefreshProgress(''),3000); return }
     setRefreshing(true)
     for (let i = 0; i < missing.length; i++) {

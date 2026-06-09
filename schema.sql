@@ -31,3 +31,6 @@ create policy "public read games" on games for select using (true);
 create policy "public insert games" on games for insert with check (true);
 create policy "public update games" on games for update using (true);
 create policy "public delete games" on games for delete using (true);
+
+-- Quitar columna status de friends (ejecutar en Supabase SQL Editor)
+-- alter table friends drop column if exists status;
