@@ -152,6 +152,13 @@ export default function Home() {
   const [saving, setSaving] = useState(false)
   const [gameInfo, setGameInfo] = useState(null)
   const [gameInfoLoading, setGameInfoLoading] = useState(false)
+  const [steamId, setSteamId] = useState('')
+  const [steamGames, setSteamGames] = useState([])
+  const [steamLoading, setSteamLoading] = useState(false)
+  const [steamError, setSteamError] = useState('')
+  const [steamImporting, setSteamImporting] = useState(false)
+  const [steamProgress, setSteamProgress] = useState('')
+  const [selectedSteamGames, setSelectedSteamGames] = useState({})
   const [refreshing, setRefreshing] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState('')
 
@@ -210,6 +217,45 @@ export default function Home() {
       body: JSON.stringify({ name: fName.trim(), username: fUser.trim(), status: fStatus }) })
     await fetchFriends()
     setModal(null); setFName(''); setFUser(''); setFStatus('offline'); setSaving(false)
+  }
+
+  const fetchSteamGames = async () => {
+    if (!steamId.trim()) return
+    setSteamLoading(true); setSteamError(''); setSteamGames([]); setSelectedSteamGames({})
+    try {
+      const r = await fetch('/api/steam?steamid=' + encodeURIComponent(steamId.trim()))
+      const data = await r.json()
+      if (data.error) { setSteamError(data.error); setSteamLoading(false); return }
+      setSteamGames(data.games || [])
+      // Pre-select all
+      const sel = {}
+      data.games.forEach(g => { sel[g.appid] = true })
+      setSelectedSteamGames(sel)
+    } catch (e) { setSteamError(e.message) }
+    setSteamLoading(false)
+  }
+
+  const importSteamGames = async () => {
+    const toImport = steamGames.filter(g => selectedSteamGames[g.appid])
+    if (!toImport.length || !selected) return
+    setSteamImporting(true)
+    for (let i = 0; i < toImport.length; i++) {
+      const g = toImport[i]
+      setSteamProgress(`Importando ${i+1}/${toImport.length}: ${g.title}...`)
+      try {
+        await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            friend_id: selected, title: g.title,
+            status: 'playing', pct: 0,
+            hours_played: g.hours_played,
+            cover_url: g.cover_url,
+          })
+        })
+      } catch {}
+    }
+    await fetchFriends()
+    setSteamImporting(false); setSteamProgress(''); setModal(null)
+    setSteamId(''); setSteamGames([]); setSelectedSteamGames({})
   }
 
   const deleteFriend = async (id) => {
@@ -469,6 +515,8 @@ export default function Home() {
                   </div>
                   <div className="flex gap-2">
                     {refreshProgress && <span className="text-xs text-purple-400 self-center">{refreshProgress}</span>}
+                    <button onClick={()=>{setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
+                      className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-green-500/30 hover:bg-green-500/10 transition-colors">🎮 Steam</button>
                     <button onClick={()=>{resetGameForm();setModal('game')}}
                       className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">+ Juego</button>
                     <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
@@ -828,6 +876,59 @@ export default function Home() {
                   </div>
                 )}
                 <div className="flex justify-end"><button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cerrar</button></div>
+              </>
+            )}
+
+
+            {modal==='steam' && (
+              <>
+                <h2 className="text-base font-semibold text-white mb-1">🎮 Importar desde Steam</h2>
+                <p className="text-xs text-gray-500 mb-4">Para {selectedFriend?.name} · El perfil de Steam debe ser público</p>
+                <div className="flex gap-2 mb-4">
+                  <input value={steamId} onChange={e=>setSteamId(e.target.value)}
+                    onKeyDown={e=>e.key==='Enter'&&fetchSteamGames()}
+                    placeholder="URL o Steam ID (ej. 76561198...)"
+                    className={inputCls + ' flex-1'} />
+                  <button onClick={fetchSteamGames} disabled={steamLoading||!steamId.trim()}
+                    className="px-3 py-2 text-sm bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white rounded-lg transition-colors flex-shrink-0">
+                    {steamLoading ? '...' : 'Buscar'}
+                  </button>
+                </div>
+                {steamError && <div className="text-xs text-red-400 mb-3">{steamError}</div>}
+                {steamGames.length > 0 && (
+                  <>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-500">{Object.values(selectedSteamGames).filter(Boolean).length} de {steamGames.length} seleccionados</span>
+                      <div className="flex gap-2">
+                        <button onClick={()=>{ const s={}; steamGames.forEach(g=>{s[g.appid]=true}); setSelectedSteamGames(s) }} className="text-xs text-gray-500 hover:text-gray-300">Todos</button>
+                        <button onClick={()=>setSelectedSteamGames({})} className="text-xs text-gray-500 hover:text-gray-300">Ninguno</button>
+                      </div>
+                    </div>
+                    <div className="space-y-1 max-h-64 overflow-y-auto mb-4 pr-1">
+                      {steamGames.map(g => (
+                        <label key={g.appid} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+                          <input type="checkbox" checked={!!selectedSteamGames[g.appid]} onChange={e=>setSelectedSteamGames(p=>({...p,[g.appid]:e.target.checked}))} className="w-4 h-4 rounded accent-purple-500 flex-shrink-0" />
+                          <img src={g.cover_url} alt="" className="w-10 h-6 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                          <span className="text-sm text-gray-300 flex-1 truncate">{g.title}</span>
+                          <span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
+                        </label>
+                      ))}
+                    </div>
+                    {steamProgress && <div className="text-xs text-purple-400 mb-2">{steamProgress}</div>}
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
+                      <button onClick={importSteamGames} disabled={steamImporting||!Object.values(selectedSteamGames).some(Boolean)}
+                        className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
+                        {steamImporting ? steamProgress||'Importando...' : `Importar ${Object.values(selectedSteamGames).filter(Boolean).length} juegos`}
+                      </button>
+                    </div>
+                  </>
+                )}
+                {!steamGames.length && !steamLoading && !steamError && (
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
+                  </div>
+                )}
               </>
             )}
 
