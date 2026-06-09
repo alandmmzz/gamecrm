@@ -130,7 +130,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [expandedDescs, setExpandedDescs] = useState({})
-  const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha'
+  const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
 
   // Friend form
   const [fName, setFName] = useState('')
@@ -252,7 +252,7 @@ export default function Home() {
         if (existing) {
           // Update hours only, keep status and progress
           await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ id: existing.id, hours_played: g.hours_played })
+            body: JSON.stringify({ id: existing.id, hours_played: g.hours_played, started_at: g.last_played || existing.started_at || null })
           })
         } else {
           // Create new
@@ -262,6 +262,7 @@ export default function Home() {
               status: 'playing', pct: 0,
               hours_played: g.hours_played,
               cover_url: g.cover_url,
+              started_at: g.last_played || null,
             })
           })
         }
@@ -401,7 +402,7 @@ export default function Home() {
   }
 
   const selectedFriend = friends.find(f => f.id === selected)
-  const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : (b.hours_played||0)-(a.hours_played||0))
+  const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.started_at||0) - new Date(a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
   const activeGames = allActive.filter(g => !g.no_progress)
   const recurringGames = allActive.filter(g => g.no_progress)
   const history = (selectedFriend?.games?.filter(g => g.status!=='playing')||[]).sort((a,b)=>{
@@ -588,6 +589,7 @@ export default function Home() {
                       <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
                         <button onClick={()=>setSortOrder('hours')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='hours'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Horas</button>
                         <button onClick={()=>setSortOrder('alpha')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='alpha'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>A–Z</button>
+                        <button onClick={()=>setSortOrder('date')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='date'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Fecha</button>
                       </div>
                     </div>
                     <div className="space-y-3 mb-8">
@@ -953,7 +955,7 @@ export default function Home() {
                             <img src={g.cover_url} alt="" className="w-10 h-6 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
                             <span className="text-sm text-gray-300 flex-1 truncate">{g.title}</span>
                             {existing && <span className="text-xs text-teal-600 flex-shrink-0">↑ horas</span>}
-                            <span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
+                {g.last_played && <span className="text-xs text-gray-600 flex-shrink-0">{new Date(g.last_played).toLocaleDateString('es-CL')}</span>}<span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
                           </label>
                         )
                       })}

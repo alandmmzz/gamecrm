@@ -22,22 +22,31 @@ export default async function handler(req, res) {
       }
     }
 
-    // Get owned games
-    const gamesRes = await fetch(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${resolvedId}&include_appinfo=true&include_played_free_games=true`)
+    // GetRecentlyPlayedGames gives rtime_last_played for recent ones
+    // GetOwnedGames with include_appinfo gives rtime_last_played too
+    const gamesRes = await fetch(
+      `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${resolvedId}&include_appinfo=true&include_played_free_games=true&format=json`
+    )
     const gamesData = await gamesRes.json()
 
     if (!gamesData.response?.games) {
       return res.status(404).json({ error: 'No se encontraron juegos. El perfil debe ser público.' })
     }
 
+    const toISODate = (ts) => {
+      if (!ts || ts === 0) return null
+      return new Date(ts * 1000).toISOString().slice(0, 10)
+    }
+
     const games = gamesData.response.games
       .filter(g => g.playtime_forever > 0)
-      .sort((a, b) => b.playtime_forever - a.playtime_forever)
+      .sort((a, b) => (b.rtime_last_played || 0) - (a.rtime_last_played || 0))
       .map(g => ({
         title: g.name,
         hours_played: Math.round(g.playtime_forever / 60 * 10) / 10,
         cover_url: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/header.jpg`,
         appid: g.appid,
+        last_played: toISODate(g.rtime_last_played),
       }))
 
     return res.status(200).json({ games, total: games.length })
