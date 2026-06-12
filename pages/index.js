@@ -138,6 +138,21 @@ function calcProgress(hoursPlayed, hltbMain, lastPlayedAt) {
   return { pct, completed, abandoned }
 }
 
+
+function Toast({ message }) {
+  if (!message) return null
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm text-white shadow-lg flex items-center gap-2 transition-all"
+      style={{background:'rgba(30,30,40,0.95)', border:'0.5px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', maxWidth:'90vw'}}>
+      {message.includes('✓') || message.includes('Listo')
+        ? <span className="text-teal-400 flex-shrink-0">✓</span>
+        : <div className="w-3 h-3 border-2 border-white/20 border-t-purple-400 rounded-full animate-spin flex-shrink-0"></div>
+      }
+      <span className="truncate">{message}</span>
+    </div>
+  )
+}
+
 export default function Home() {
   const [friends, setFriends] = useState([])
   const [view, setView] = useState('list') // 'list' | 'profile' | 'activity'
@@ -478,9 +493,9 @@ export default function Home() {
   const activeGames = allActive.filter(g => !g.no_progress)
   const recurringGames = allActive.filter(g => g.no_progress)
   const history = (selectedFriend?.games?.filter(g => g.status!=='playing')||[]).sort((a,b)=>{
-    const da = b.finished_at||b.started_at||b.created_at||''
-    const db = a.finished_at||a.started_at||a.created_at||''
-    return da.localeCompare(db)
+    const da = new Date(b.finished_at||b.last_played_at||b.started_at||b.created_at||0).getTime()
+    const db = new Date(a.finished_at||a.last_played_at||a.started_at||a.created_at||0).getTime()
+    return da - db
   })
   const allGames = friends.flatMap(f=>(f.games||[]).map(g=>({...g,friendName:f.name,friendIdx:friends.findIndex(x=>x.id===f.id)})))
   const playing = friends.filter(f=>f.games?.some(g=>g.status==='playing')).length
@@ -1005,7 +1020,7 @@ export default function Home() {
                     {steamLoading ? '...' : 'Buscar'}
                   </button>
                 </div>
-                {steamError && <div className="text-xs text-red-400 mb-3">{steamError}</div>}
+                {steamError && <div className={`text-xs mb-3 ${steamError.startsWith("⚠️") ? "text-amber-400" : "text-red-400"}`}>{steamError}</div>}
                 {steamGames.length > 0 && (
                   <>
                     <div className="flex items-center justify-between mb-2">
@@ -1032,7 +1047,6 @@ export default function Home() {
                         )
                       })}
                     </div>
-                    {steamProgress && <div className="text-xs text-purple-400 mb-2">{steamProgress}</div>}
                     <div className="flex gap-2 justify-end">
                       <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
                       <button onClick={importSteamGames} disabled={steamImporting||!Object.values(selectedSteamGames).some(Boolean)}
@@ -1053,6 +1067,7 @@ export default function Home() {
           </div>
         </div>
       )}
+      <Toast message={refreshProgress || (steamImporting ? steamProgress : "")} />
     </>
   )
 }
