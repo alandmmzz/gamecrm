@@ -305,7 +305,8 @@ export default function Home() {
           await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
               friend_id: selected, title: g.title,
-              status: 'playing', pct: 0,
+              status: g.achievement_pct >= 100 ? 'completed' : 'playing',
+              pct: g.achievement_pct != null ? g.achievement_pct : 0,
               hours_played: g.hours_played,
               cover_url: g.cover_url,
               last_played_at: g.last_played || null,
@@ -1047,7 +1048,7 @@ export default function Home() {
                             <img src={g.cover_url} alt="" className="w-10 h-6 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
                             <span className="text-sm text-gray-300 flex-1 truncate">{g.title}</span>
                             {existing && <span className="text-xs text-teal-600 flex-shrink-0">↑ horas</span>}
-                {g.last_played && <span className="text-xs text-gray-600 flex-shrink-0">{new Date(g.last_played).toLocaleDateString('es-CL')}</span>}<span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
+                {g.last_played && <span className="text-xs text-gray-600 flex-shrink-0">{new Date(g.last_played).toLocaleDateString('es-CL')}</span>}{g.achievement_pct != null && <span className="text-xs text-teal-600 flex-shrink-0">🏆 {g.achievement_pct}%</span>}<span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
                           </label>
                         )
                       })}
