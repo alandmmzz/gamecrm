@@ -407,23 +407,36 @@ export default function Home() {
   const refreshCovers = async () => {
     const f = friends.find(x => x.id === selected)
     if (!f) return
-    const missing = (f.games||[]).filter(g => !g.genres?.length || !g.cover_url)
-    if (!missing.length) { setRefreshProgress('Todo al día ✓'); setTimeout(()=>setRefreshProgress(''),3000); return }
+    const games = f.games || []
+    if (!games.length) { setRefreshProgress('Sin juegos'); setTimeout(()=>setRefreshProgress(''),2000); return }
     setRefreshing(true)
-    for (let i = 0; i < missing.length; i++) {
-      const g = missing[i]
-      setRefreshProgress(`${i+1}/${missing.length}: ${g.title}...`)
+    for (let i = 0; i < games.length; i++) {
+      const g = games[i]
+      setRefreshProgress(`${i+1}/${games.length}: ${g.title}...`)
       try {
-        const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
-        const info = await r.json()
-        if (info.cover_url || info.description || info.genres?.length) {
+        // Fetch info only if missing cover or genres
+        let info = {}
+        if (!g.cover_url || !g.genres?.length) {
+          const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
+          info = await r.json()
+        }
+        // Calc progress for all active games with HLTB data
+        const prog = (g.status === 'playing' && !g.no_progress)
+          ? calcProgress(g.hours_played, g.hltb_main, g.last_played_at)
+          : null
+        const patch = {
+          id: g.id,
+          ...(info.cover_url && { cover_url: info.cover_url }),
+          ...(info.description && { description: info.description }),
+          ...(info.genres?.length && { genres: info.genres }),
+          ...(prog?.pct != null && { pct: prog.pct }),
+          ...(prog?.completed && { status: 'completed' }),
+          ...(prog?.abandoned && !prog?.completed && { status: 'dropped' }),
+        }
+        // Only PATCH if there's something to update
+        if (Object.keys(patch).length > 1) {
           await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({
-              id: g.id,
-              cover_url: info.cover_url || g.cover_url || null,
-              description: info.description || g.description || null,
-              genres: info.genres?.length ? info.genres : (g.genres || []),
-            }) })
+            body: JSON.stringify(patch) })
         }
       } catch {}
     }
