@@ -267,7 +267,7 @@ export default function Home() {
         if (existing) {
           // Update hours only, keep status and progress
           {
-            const prog = (existing.hltb_main >= 3 && existing.pct === 0)
+          const prog = (existing.hltb_main >= 3 && (existing.pct === 0 || existing.pct === null))
               ? calcProgress(g.hours_played, existing.hltb_main, g.last_played || existing.last_played_at)
               : null
             await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
@@ -319,7 +319,7 @@ export default function Home() {
             const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
             info = await r.json()
           }
-          const prog = (hltbMain && hltbMain >= 3 && g.pct === 0)
+          const prog = (hltbMain && hltbMain >= 3 && (g.pct === 0 || g.pct === null))
             ? calcProgress(g.hours_played, hltbMain, g.last_played_at)
             : null
           const patch = {
@@ -442,7 +442,7 @@ export default function Home() {
           info = await r.json()
         }
         // Calc progress for all active games with HLTB data
-        const prog = (g.status === 'playing' && !g.no_progress && g.hltb_main >= 3 && g.pct === 0)
+        const prog = (g.status === 'playing' && !g.no_progress && g.hltb_main >= 3 && (g.pct === 0 || g.pct === null))
           ? calcProgress(g.hours_played, g.hltb_main, g.last_played_at)
           : null
         const patch = {
