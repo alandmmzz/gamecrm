@@ -758,8 +758,13 @@ export default function Home() {
                             </div>
                             <div className="text-xs text-gray-600 mt-0.5">
                               {g.hours_played}h
-                              {(g.last_played_at||g.started_at) && ` · últ. vez ${fmtDate(g.last_played_at||g.started_at)}`}
-                              {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
+                              {(()=>{
+                                const lp = g.last_played_at||g.started_at
+                                const fin = g.finished_at
+                                if (lp) return ` · últ. vez ${fmtDate(lp)}`
+                                if (fin) return ` · fin ${fmtDate(fin)}`
+                                return ''
+                              })()}
                             </div>
                             {g.genres?.length>0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
@@ -868,8 +873,13 @@ export default function Home() {
                           <div className="text-sm text-gray-300"><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
                           <div className="text-xs text-gray-600">
                             {g.hours_played}h
-                            {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
-                            {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
+                            {(()=>{
+                              const lp = g.last_played_at||g.started_at
+                              const fin = g.finished_at
+                              if (lp) return ` · últ. vez ${fmtDate(lp)}`
+                              if (fin) return ` · fin ${fmtDate(fin)}`
+                              return ''
+                            })()}
                           </div>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
