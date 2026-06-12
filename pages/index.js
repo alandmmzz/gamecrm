@@ -144,7 +144,7 @@ function Toast({ message }) {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm text-white shadow-lg flex items-center gap-2 transition-all"
       style={{background:'rgba(30,30,40,0.95)', border:'0.5px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', maxWidth:'90vw'}}>
-      {message.includes('✓') || message.includes('Listo')
+      {message.includes('✓') || message.includes('Listo') || message.includes('guardado') || message.includes('actualizado') || message.includes('agregado')
         ? <span className="text-teal-400 flex-shrink-0">✓</span>
         : <div className="w-3 h-3 border-2 border-white/20 border-t-purple-400 rounded-full animate-spin flex-shrink-0"></div>
       }
@@ -191,6 +191,7 @@ export default function Home() {
   const [selectedSteamGames, setSelectedSteamGames] = useState({})
   const [refreshing, setRefreshing] = useState(false)
   const [refreshProgress, setRefreshProgress] = useState('')
+  const [successToast, setSuccessToast] = useState('')
 
   // AI estimate
   const [estimateDesc, setEstimateDesc] = useState('')
@@ -234,6 +235,11 @@ export default function Home() {
     }
   }
 
+  const showSuccess = (msg) => {
+    setSuccessToast(msg)
+    setTimeout(() => setSuccessToast(''), 2500)
+  }
+
   const resetGameForm = () => {
     setGName(''); setGStatus('playing'); setGPct(0); setGHours('')
     setGStartedAt(''); setGFinishedAt(''); setGNoProgress(false)
@@ -246,7 +252,7 @@ export default function Home() {
     await fetch('/api/friends', { method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ name: fName.trim(), username: fUser.trim(), status: fStatus }) })
     await fetchFriends()
-    setModal(null); setFName(''); setFUser(''); setFStatus('offline'); setSaving(false)
+    setModal(null); setFName(''); setFUser(''); setFStatus('offline'); setSaving(false); showSuccess('Amigo agregado ✓')
   }
 
   const fetchSteamGames = async () => {
@@ -377,7 +383,7 @@ export default function Home() {
         started_at: gStartedAt||null, finished_at: gStatus==='completed'?(gFinishedAt||null):null,
         no_progress: gNoProgress,
       }) })
-    await fetchFriends(); setModal(null); resetGameForm(); setSaving(false)
+    await fetchFriends(); setModal(null); resetGameForm(); setSaving(false); showSuccess('Juego guardado ✓')
   }
 
   const updateGame = async () => {
@@ -389,7 +395,7 @@ export default function Home() {
         started_at: gStartedAt||null, finished_at: gStatus==='completed'?(gFinishedAt||null):null,
         no_progress: gNoProgress,
       }) })
-    await fetchFriends(); setModal(null); setEditGame(null); setSaving(false)
+    await fetchFriends(); setModal(null); setEditGame(null); setSaving(false); showSuccess('Juego actualizado ✓')
   }
 
   const deleteGame = async (id) => {
@@ -1067,7 +1073,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      <Toast message={refreshProgress || (steamImporting ? steamProgress : "")} />
+      <Toast message={successToast || refreshProgress} />
     </>
   )
 }
