@@ -292,28 +292,45 @@ export default function Home() {
       } catch {}
     }
     await fetchFriends()
-    // Auto-refresh genres for imported games — fetch fresh data first
+    // Auto-refresh: fetch HLTB + gameinfo for all games missing data
     const freshR = await fetch('/api/friends')
     const freshFriends = await freshR.json()
     const freshFriend = (freshFriends || []).find(x => x.id === selected)
     if (freshFriend) {
-      const missing = (freshFriend.games||[]).filter(g => !g.genres?.length || !g.cover_url)
-      for (let i = 0; i < missing.length; i++) {
-        const g = missing[i]
-        setSteamProgress(`Buscando info ${i+1}/${missing.length}: ${g.title}...`)
+      const toProcess = (freshFriend.games||[]).filter(g => !g.genres?.length || !g.cover_url || !g.hltb_main)
+      for (let i = 0; i < toProcess.length; i++) {
+        const g = toProcess[i]
+        setSteamProgress(`Buscando info ${i+1}/${toProcess.length}: ${g.title}...`)
         try {
-          const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
-          const info = await r.json()
-          const prog = calcProgress(g.hours_played, g.hltb_main, g.last_played_at)
-          if (info.cover_url || info.description || info.genres?.length || prog) {
+          // Fetch HLTB if missing
+          let hltbMain = g.hltb_main
+          if (!hltbMain) {
+            const hr = await fetch(`/api/hltb?q=${encodeURIComponent(g.title)}`)
+            const hd = await hr.json()
+            if (Array.isArray(hd) && hd.length) {
+              hltbMain = hd[0].main || null
+            }
+          }
+          // Fetch cover/genres if missing
+          let info = {}
+          if (!g.cover_url || !g.genres?.length) {
+            const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
+            info = await r.json()
+          }
+          const prog = calcProgress(g.hours_played, hltbMain, g.last_played_at)
+          const patch = {
+            id: g.id,
+            ...(info.cover_url && !g.cover_url && { cover_url: info.cover_url }),
+            ...(info.description && !g.description && { description: info.description }),
+            ...(info.genres?.length && !g.genres?.length && { genres: info.genres }),
+            ...(hltbMain && !g.hltb_main && { hltb_main: hltbMain }),
+            ...(prog?.pct != null && { pct: prog.pct }),
+            ...(prog?.completed && { status: 'completed' }),
+            ...(prog?.abandoned && !prog?.completed && { status: 'dropped' }),
+          }
+          if (Object.keys(patch).length > 1) {
             await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({
-                id: g.id,
-                cover_url: info.cover_url||g.cover_url||null,
-                description: info.description||g.description||null,
-                genres: info.genres?.length ? info.genres : (g.genres||[]),
-                ...(prog && { pct: prog.pct, status: prog.completed ? 'completed' : prog.abandoned ? 'dropped' : g.status }),
-              }) })
+              body: JSON.stringify(patch) })
           }
         } catch {}
       }
