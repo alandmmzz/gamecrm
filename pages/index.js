@@ -263,24 +263,43 @@ function InsightsView({ friends }) {
         <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🧬 Perfiles similares</div>
         {similarPairs.length === 0
           ? <div className="text-sm text-gray-600">No hay suficientes datos de géneros. Usá el 🔄 refresh en cada perfil.</div>
-          : <div className="space-y-2">
-              {similarPairs.map((p, i) => (
-                <div key={i} className="rounded-xl border border-white/5 p-3 flex items-center gap-3" style={{background:'rgba(255,255,255,0.02)'}}>
-                  <div className="flex-1">
-                    <div className="text-sm text-white font-medium">{p.a} <span className="text-gray-600">&</span> {p.b}</div>
-                    <div className="flex gap-1 mt-1 flex-wrap">
-                      {p.common.map(g => (
-                        <span key={g} className="text-xs px-2 py-0.5 rounded-full border border-white/10 text-gray-400">{g}</span>
+          : (() => {
+              const featured = similarPairs.filter(p => p.score >= 3)
+              const secondary = similarPairs.filter(p => p.score === 2)
+              return (
+                <div className="space-y-4">
+                  {featured.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {featured.map((p, i) => (
+                        <div key={i} className="rounded-xl border border-pink-500/30 p-4" style={{background:'rgba(236,72,153,0.07)'}}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="font-semibold text-white">{p.a}</span>
+                            <span className="text-pink-400 text-lg">♥</span>
+                            <span className="font-semibold text-white">{p.b}</span>
+                          </div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {p.common.map(g => (
+                              <span key={g} className="text-xs px-2.5 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-200">{g}</span>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-lg font-semibold text-teal-400">{p.score}</div>
-                    <div className="text-xs text-gray-600">género{p.score!==1?'s':''} en común</div>
-                  </div>
+                  )}
+                  {secondary.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {secondary.map((p, i) => (
+                        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs" style={{background:'rgba(255,255,255,0.03)'}}>
+                          <span className="text-gray-400">{p.a} & {p.b}</span>
+                          <span className="text-gray-700">·</span>
+                          <span className="text-gray-600">{p.common.join(', ')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )
+            })()
         }
       </div>
 
