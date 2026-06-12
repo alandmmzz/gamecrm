@@ -703,7 +703,7 @@ export default function Home() {
 
           {/* Tabs */}
           {view!=='profile' && <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
-            {[['list','Amigos'],['activity','Actividad'],['insights','✦ Insights']].map(([t,label])=>(
+            {[['list','Amigos'],['activity','Actividad'],['insights','✦ Insights ']].map(([t,label])=>(
               <button key={t} onClick={()=>{setView(t);setSelected(null)}}
                 className={`px-4 py-2 rounded-lg text-sm transition-all ${(view===t||(view==='profile'&&t==='list'))?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300'}`}>
                 {label}
