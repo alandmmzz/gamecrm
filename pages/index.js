@@ -698,11 +698,11 @@ export default function Home() {
                                   </div>
                                 ))}
                               </div>
-                              {!g.no_progress && (
+                              {!g.no_progress && (g.pct > 0 || g.hltb_main) && (
                                 <>
-                                  <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct}%</span></div>
+                                  <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct||0}%</span></div>
                                   <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                                    <div className={`h-full rounded-full ${progressColor(g.pct)}`} style={{width:`${g.pct}%`}}></div>
+                                    <div className={`h-full rounded-full ${progressColor(g.pct||0)}`} style={{width:`${g.pct||0}%`}}></div>
                                   </div>
                                 </>
                               )}
