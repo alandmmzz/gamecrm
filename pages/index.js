@@ -187,7 +187,7 @@ function InsightsView({ friends }) {
     for (let j = i+1; j < fids.length; j++) {
       const a = friendGenres[fids[i]], b = friendGenres[fids[j]]
       const common = a.top3.filter(g => b.top3.includes(g))
-      if (common.length >= 1) {
+      if (common.length >= 2) {
         similarPairs.push({ a: a.name, b: b.name, common, score: common.length })
       }
     }
