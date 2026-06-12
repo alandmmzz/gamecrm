@@ -642,7 +642,6 @@ export default function Home() {
                     ) : null })()}
                   </div>
                   <div className="flex gap-2">
-                    {refreshProgress && <span className="text-xs text-purple-400 self-center">{refreshProgress}</span>}
                     <button onClick={()=>{setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                       className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-green-500/30 hover:bg-green-500/10 transition-colors">🎮 Steam</button>
                     <button onClick={()=>{resetGameForm();setModal('game')}}
