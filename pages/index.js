@@ -441,15 +441,23 @@ export default function Home() {
           const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
           info = await r.json()
         }
-        // Calc progress for all active games with HLTB data
-        const prog = (g.status === 'playing' && !g.no_progress && g.hltb_main >= 3 && (g.pct === 0 || g.pct === null))
-          ? calcProgress(g.hours_played, g.hltb_main, g.last_played_at)
+        // Fetch HLTB if missing
+        let hltbMain = g.hltb_main
+        if (!hltbMain) {
+          const hr = await fetch(`/api/hltb?q=${encodeURIComponent(g.title)}`)
+          const hd = await hr.json()
+          if (Array.isArray(hd) && hd.length) hltbMain = hd[0].main || null
+        }
+        // Calc progress
+        const prog = (g.status === 'playing' && !g.no_progress && hltbMain >= 3 && (g.pct === 0 || g.pct === null))
+          ? calcProgress(g.hours_played, hltbMain, g.last_played_at)
           : null
         const patch = {
           id: g.id,
           ...(info.cover_url && { cover_url: info.cover_url }),
           ...(info.description && { description: info.description }),
           ...(info.genres?.length && { genres: info.genres }),
+          ...(hltbMain && !g.hltb_main && { hltb_main: hltbMain }),
           ...(prog?.pct != null && { pct: prog.pct }),
           ...(prog?.completed && { status: 'completed' }),
           ...(prog?.abandoned && !prog?.completed && { status: 'dropped' }),
