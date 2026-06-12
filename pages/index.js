@@ -500,8 +500,8 @@ export default function Home() {
   const activeGames = allActive.filter(g => !g.no_progress)
   const recurringGames = allActive.filter(g => g.no_progress)
   const history = (selectedFriend?.games?.filter(g => g.status!=='playing')||[]).sort((a,b)=>{
-    const da = new Date(b.finished_at||b.last_played_at||b.started_at||b.created_at||0).getTime()
-    const db = new Date(a.finished_at||a.last_played_at||a.started_at||a.created_at||0).getTime()
+    const da = new Date(b.last_played_at||b.finished_at||b.started_at||b.created_at||0).getTime()
+    const db = new Date(a.last_played_at||a.finished_at||a.started_at||a.created_at||0).getTime()
     return da - db
   })
   const allGames = friends.flatMap(f=>(f.games||[]).map(g=>({...g,friendName:f.name,friendIdx:friends.findIndex(x=>x.id===f.id)})))
