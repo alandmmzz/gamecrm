@@ -123,6 +123,21 @@ function GenreRadarChart({ games }) {
   )
 }
 
+
+function calcProgress(hoursPlayed, hltbMain, lastPlayedAt) {
+  const pct = hltbMain ? Math.min(Math.round((hoursPlayed / hltbMain) * 100), 100) : null
+  const completed = hltbMain ? hoursPlayed >= hltbMain * 0.95 : false
+
+  // Auto-abandon: not played in 1 year and under 50%
+  let abandoned = false
+  if (lastPlayedAt && pct !== null && pct < 50) {
+    const daysSince = (Date.now() - new Date(lastPlayedAt)) / (1000 * 60 * 60 * 24)
+    if (daysSince > 365) abandoned = true
+  }
+
+  return { pct, completed, abandoned }
+}
+
 export default function Home() {
   const [friends, setFriends] = useState([])
   const [view, setView] = useState('list') // 'list' | 'profile' | 'activity'
@@ -251,9 +266,17 @@ export default function Home() {
         })
         if (existing) {
           // Update hours only, keep status and progress
-          await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ id: existing.id, hours_played: g.hours_played, started_at: g.last_played || existing.started_at || null })
-          })
+          {
+            const prog = calcProgress(g.hours_played, existing.hltb_main, g.last_played || existing.last_played_at)
+            await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                id: existing.id,
+                hours_played: g.hours_played,
+                last_played_at: g.last_played || null,
+                ...(prog && { pct: prog.pct, status: prog.completed ? 'completed' : prog.abandoned ? 'dropped' : existing.status }),
+              })
+            })
+          }
         } else {
           // Create new
           await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
@@ -262,7 +285,7 @@ export default function Home() {
               status: 'playing', pct: 0,
               hours_played: g.hours_played,
               cover_url: g.cover_url,
-              started_at: g.last_played || null,
+              last_played_at: g.last_played || null,
             })
           })
         }
@@ -281,9 +304,16 @@ export default function Home() {
         try {
           const r = await fetch('/api/gameinfo?title='+encodeURIComponent(g.title))
           const info = await r.json()
-          if (info.cover_url || info.description || info.genres?.length) {
+          const prog = calcProgress(g.hours_played, g.hltb_main, g.last_played_at)
+          if (info.cover_url || info.description || info.genres?.length || prog) {
             await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ id: g.id, cover_url: info.cover_url||g.cover_url||null, description: info.description||g.description||null, genres: info.genres?.length ? info.genres : (g.genres||[]) }) })
+              body: JSON.stringify({
+                id: g.id,
+                cover_url: info.cover_url||g.cover_url||null,
+                description: info.description||g.description||null,
+                genres: info.genres?.length ? info.genres : (g.genres||[]),
+                ...(prog && { pct: prog.pct, status: prog.completed ? 'completed' : prog.abandoned ? 'dropped' : g.status }),
+              }) })
           }
         } catch {}
       }
@@ -334,7 +364,7 @@ export default function Home() {
 
   const openEditGame = (game) => {
     setEditGame(game); setGStatus(game.status); setGPct(game.pct); setGHours(game.hours_played)
-    setGStartedAt(game.started_at ? game.started_at.slice(0,10) : '')
+    setGStartedAt((game.last_played_at||game.started_at) ? (game.last_played_at||game.started_at).slice(0,10) : '')
     setGFinishedAt(game.finished_at ? game.finished_at.slice(0,10) : '')
     setGNoProgress(game.no_progress || false)
     setEstimateDesc(''); setEstimateResult(null); setModal('editGame')
@@ -402,7 +432,7 @@ export default function Home() {
   }
 
   const selectedFriend = friends.find(f => f.id === selected)
-  const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.started_at||0) - new Date(a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
+  const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.last_played_at||b.started_at||0) - new Date(a.last_played_at||a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
   const activeGames = allActive.filter(g => !g.no_progress)
   const recurringGames = allActive.filter(g => g.no_progress)
   const history = (selectedFriend?.games?.filter(g => g.status!=='playing')||[]).sort((a,b)=>{
@@ -589,7 +619,7 @@ export default function Home() {
                       <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
                         <button onClick={()=>setSortOrder('hours')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='hours'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Horas</button>
                         <button onClick={()=>setSortOrder('alpha')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='alpha'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>A–Z</button>
-                        <button onClick={()=>setSortOrder('date')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='date'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Fecha</button>
+                        <button onClick={()=>setSortOrder('date')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='date'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Recientes</button>
                       </div>
                     </div>
                     <div className="space-y-3 mb-8">
@@ -606,7 +636,7 @@ export default function Home() {
                                   <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
                                 </div>
                               </div>
-                              {g.started_at && <div className="text-xs text-gray-600 mb-2">Desde {fmtDate(g.started_at)}</div>}
+                              {(g.last_played_at||g.started_at) && <div className="text-xs text-gray-600 mb-2">Último juego {fmtDate(g.last_played_at||g.started_at)}</div>}
                               {g.genres?.length>0 && (
                                 <div className="flex flex-wrap gap-1 mb-2">
                                   {g.genres.map(genre=>(
@@ -665,7 +695,7 @@ export default function Home() {
                             </div>
                             <div className="text-xs text-gray-600 mt-0.5">
                               {g.hours_played}h
-                              {g.started_at && ` · inicio ${fmtDate(g.started_at)}`}
+                              {(g.last_played_at||g.started_at) && ` · últ. vez ${fmtDate(g.last_played_at||g.started_at)}`}
                               {g.finished_at && ` · fin ${fmtDate(g.finished_at)}`}
                             </div>
                             {g.genres?.length>0 && (
@@ -844,8 +874,8 @@ export default function Home() {
                   <div><label className="block text-xs text-gray-500 mb-1">Horas jugadas</label><input type="number" min="0" step="0.5" value={gHours} onChange={e=>setGHours(e.target.value)} placeholder="ej. 12" className={inputCls} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div><label className="block text-xs text-gray-500 mb-1">Fecha inicio</label><input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} /></div>
-                  <div><label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':'Fecha fin'}</label><input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">Últ. vez jugado</label><input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':''}</label>{gStatus==='completed'&&<input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} />}</div>
                 </div>
                 <label className="flex items-center gap-2 mb-4 cursor-pointer">
                   <input type="checkbox" checked={gNoProgress} onChange={e=>setGNoProgress(e.target.checked)} className="w-4 h-4 rounded accent-purple-500" />
@@ -872,8 +902,8 @@ export default function Home() {
                   <div><label className="block text-xs text-gray-500 mb-1">Horas jugadas</label><input type="number" min="0" step="0.5" value={gHours} onChange={e=>setGHours(e.target.value)} className={inputCls} /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div><label className="block text-xs text-gray-500 mb-1">Fecha inicio</label><input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} /></div>
-                  <div><label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':'Fecha fin'}</label><input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">Últ. vez jugado</label><input type="date" value={gStartedAt} onChange={e=>setGStartedAt(e.target.value)} className={inputCls} /></div>
+                  <div><label className="block text-xs text-gray-500 mb-1">{gStatus==='completed'?'Fecha fin':''}</label>{gStatus==='completed'&&<input type="date" value={gFinishedAt} onChange={e=>setGFinishedAt(e.target.value)} className={inputCls} />}</div>
                 </div>
                 <label className="flex items-center gap-2 mb-4 cursor-pointer">
                   <input type="checkbox" checked={gNoProgress} onChange={e=>setGNoProgress(e.target.checked)} className="w-4 h-4 rounded accent-purple-500" />

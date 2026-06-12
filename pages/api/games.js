@@ -2,7 +2,7 @@ import { supabase } from '../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { friend_id, title, status, pct, hours_played, hltb_main, hltb_extra, hltb_complete, cover_url, description, genres, started_at, finished_at, no_progress } = req.body
+    const { friend_id, title, status, pct, hours_played, hltb_main, hltb_extra, hltb_complete, cover_url, description, genres, started_at, last_played_at, finished_at, no_progress } = req.body
     if (!friend_id || !title) return res.status(400).json({ error: 'friend_id and title required' })
 
     const { data, error } = await supabase
@@ -18,6 +18,7 @@ export default async function handler(req, res) {
         cover_url: cover_url || null,
         description: description || null,
         started_at: started_at || null,
+        last_played_at: last_played_at || null,
         finished_at: finished_at || null,
         no_progress: no_progress || false,
         genres: genres || [],
