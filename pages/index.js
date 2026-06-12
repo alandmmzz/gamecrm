@@ -139,6 +139,155 @@ function calcProgress(hoursPlayed, hltbMain, lastPlayedAt) {
 }
 
 
+
+function InsightsView({ friends }) {
+  const allGames = friends.flatMap(f => (f.games||[]).map(g => ({...g, friendName: f.name, friendId: f.id, friendColor: f.color})))
+
+  // 1. Juegos en común — juegos que juegan/jugaron 2+ amigos
+  const gameGroups = {}
+  allGames.forEach(g => {
+    const key = g.title.toLowerCase().trim()
+    if (!gameGroups[key]) gameGroups[key] = { title: g.title, cover_url: g.cover_url, players: [] }
+    if (!gameGroups[key].players.find(p => p.friendId === g.friendId)) {
+      gameGroups[key].players.push({ friendName: g.friendName, hours: g.hours_played, status: g.status, pct: g.pct })
+    }
+  })
+  const sharedGames = Object.values(gameGroups)
+    .filter(g => g.players.length >= 2)
+    .sort((a,b) => b.players.length - a.players.length)
+    .slice(0, 10)
+
+  // 2. El más dedicado — por juego, quién tiene más horas
+  const topPlayers = Object.values(gameGroups)
+    .filter(g => g.players.length >= 2)
+    .map(g => {
+      const sorted = [...g.players].sort((a,b) => b.hours - a.hours)
+      return { title: g.title, cover_url: g.cover_url, leader: sorted[0], rest: sorted.slice(1) }
+    })
+    .filter(g => g.leader.hours > 0)
+    .sort((a,b) => b.leader.hours - a.leader.hours)
+    .slice(0, 8)
+
+  // 3. Perfiles similares — amigos con géneros parecidos
+  const friendGenres = {}
+  friends.forEach(f => {
+    const genreMap = {}
+    ;(f.games||[]).forEach(g => {
+      ;(g.genres||[]).forEach(genre => {
+        genreMap[genre] = (genreMap[genre]||0) + (g.hours_played||0)
+      })
+    })
+    const top3 = Object.entries(genreMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
+    friendGenres[f.id] = { name: f.name, top3, totalH: (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0) }
+  })
+
+  const similarPairs = []
+  const fids = Object.keys(friendGenres)
+  for (let i = 0; i < fids.length; i++) {
+    for (let j = i+1; j < fids.length; j++) {
+      const a = friendGenres[fids[i]], b = friendGenres[fids[j]]
+      const common = a.top3.filter(g => b.top3.includes(g))
+      if (common.length >= 1) {
+        similarPairs.push({ a: a.name, b: b.name, common, score: common.length })
+      }
+    }
+  }
+  similarPairs.sort((a,b) => b.score - a.score)
+
+  const gameBadge = (s) => s==='playing'?'bg-purple-900/60 text-purple-200':s==='completed'?'bg-teal-900/60 text-teal-200':'bg-red-900/40 text-red-300'
+  const gameLabel = (s) => s==='playing'?'Jugando':s==='completed'?'Completado':'Abandonado'
+
+  return (
+    <div className="space-y-8">
+
+      {/* Juegos en común */}
+      <div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🎮 Juegos en común</div>
+        {sharedGames.length === 0
+          ? <div className="text-sm text-gray-600">No hay juegos en común aún.</div>
+          : <div className="space-y-2">
+              {sharedGames.map(g => (
+                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:'rgba(255,255,255,0.02)'}}>
+                  {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-10 h-14 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-white text-sm mb-1">{g.title}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.players.map(p => (
+                        <div key={p.friendName} className="flex items-center gap-1.5 text-xs bg-white/5 rounded-lg px-2 py-1">
+                          <span className="text-gray-300">{p.friendName}</span>
+                          <span className="text-gray-600">{p.hours}h</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${gameBadge(p.status)}`}>{gameLabel(p.status)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-xl font-semibold text-purple-400">{g.players.length}</div>
+                    <div className="text-xs text-gray-600">jugadores</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+
+      {/* El más dedicado */}
+      <div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🏆 El más dedicado</div>
+        {topPlayers.length === 0
+          ? <div className="text-sm text-gray-600">No hay datos suficientes aún.</div>
+          : <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {topPlayers.map(g => (
+                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:'rgba(255,255,255,0.02)'}}>
+                  {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-400 truncate">{g.title}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-white font-medium text-sm">🥇 {g.leader.friendName}</span>
+                      <span className="text-purple-400 text-xs font-medium">{g.leader.hours}h</span>
+                    </div>
+                    {g.rest.length > 0 && (
+                      <div className="text-xs text-gray-600 mt-0.5">
+                        {g.rest.map(p => `${p.friendName} ${p.hours}h`).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+
+      {/* Perfiles similares */}
+      <div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🧬 Perfiles similares</div>
+        {similarPairs.length === 0
+          ? <div className="text-sm text-gray-600">No hay suficientes datos de géneros. Usá el 🔄 refresh en cada perfil.</div>
+          : <div className="space-y-2">
+              {similarPairs.map((p, i) => (
+                <div key={i} className="rounded-xl border border-white/5 p-3 flex items-center gap-3" style={{background:'rgba(255,255,255,0.02)'}}>
+                  <div className="flex-1">
+                    <div className="text-sm text-white font-medium">{p.a} <span className="text-gray-600">&</span> {p.b}</div>
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {p.common.map(g => (
+                        <span key={g} className="text-xs px-2 py-0.5 rounded-full border border-white/10 text-gray-400">{g}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-lg font-semibold text-teal-400">{p.score}</div>
+                    <div className="text-xs text-gray-600">género{p.score!==1?'s':''} en común</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+
+    </div>
+  )
+}
+
 function Toast({ message }) {
   if (!message) return null
   return (
@@ -554,10 +703,10 @@ export default function Home() {
 
           {/* Tabs */}
           {view!=='profile' && <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
-            {['list','activity'].map(t=>(
+            {[['list','Amigos'],['activity','Actividad'],['insights','✦ Insights']].map(([t,label])=>(
               <button key={t} onClick={()=>{setView(t);setSelected(null)}}
                 className={`px-4 py-2 rounded-lg text-sm transition-all ${(view===t||(view==='profile'&&t==='list'))?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300'}`}>
-                {t==='list'?'Amigos':'Actividad'}
+                {label}
               </button>
             ))}
           </div>}
@@ -855,6 +1004,11 @@ export default function Home() {
             </>
             )
           })()}
+
+          {/* Insights tab */}
+          {view==='insights' && (
+            <InsightsView friends={friends} />
+          )}
 
           {/* Activity tab */}
           {view==='activity' && (
