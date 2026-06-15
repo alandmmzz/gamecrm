@@ -1228,7 +1228,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 </div>{/* end main col */}
 
                 {/* Chart sidebar — desktop only */}
-                <div className="hidden md:block w-64 flex-shrink-0 sticky top-8">
+                <div className="hidden md:block w-64 flex-shrink-0 sticky top-8" style={{maxHeight:'calc(100vh - 80px)', overflowY:'auto', scrollbarWidth:'none'}}>
                   <div className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
                     <GenreRadarChart games={selectedFriend?.games||[]} />
