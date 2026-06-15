@@ -7,34 +7,29 @@ export default function AuthCallback() {
   const [status, setStatus] = useState('Autenticando...')
 
   useEffect(() => {
-    const process = async () => {
-      // Try to get hash from sessionStorage (set by auth-callback.html)
-      const storedHash = sessionStorage.getItem('supabase-auth-hash')
-      const hash = storedHash || window.location.hash
+    if (!router.isReady) return
 
-      if (hash && hash.includes('access_token')) {
-        sessionStorage.removeItem('supabase-auth-hash')
-        const params = new URLSearchParams(hash.substring(1))
-        const accessToken = params.get('access_token')
-        const refreshToken = params.get('refresh_token') || ''
+    const { code, error } = router.query
 
-        const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-        if (data?.session) {
-          setStatus('¡Listo!')
-          router.replace('/')
-          return
-        }
-      }
-
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) { router.replace('/'); return }
-
-      setStatus('Error al iniciar sesión. Redirigiendo...')
-      setTimeout(() => router.replace('/login'), 2000)
+    if (error) {
+      setStatus('Error al iniciar sesión')
+      setTimeout(() => router.replace('/login?error=' + error), 2000)
+      return
     }
 
-    process()
-  }, [])
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error || !data.session) {
+          setStatus('Error al iniciar sesión')
+          setTimeout(() => router.replace('/login?error=exchange_failed'), 2000)
+        } else {
+          router.replace('/')
+        }
+      })
+    } else {
+      router.replace('/login')
+    }
+  }, [router.isReady, router.query])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3" style={{background:'var(--bg-app)', fontFamily:'Inter,sans-serif'}}>
