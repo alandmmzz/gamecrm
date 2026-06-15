@@ -856,6 +856,27 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
         }
       } catch {}
     }
+
+    // Generate role title if missing
+    const freshFriendAfter = friends.find(f => f.id === selected) || freshFriend
+    if (freshFriendAfter && !freshFriendAfter.role_title) {
+      setRefreshProgress('Generando rol...')
+      const genreMap = {}
+      ;(freshFriendAfter.games||[]).forEach(g => {
+        ;(g.genres||[]).forEach(genre => {
+          genreMap[genre] = (genreMap[genre]||0) + (g.hours_played||0)
+        })
+      })
+      const top3 = Object.entries(genreMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
+      if (top3.length) {
+        try {
+          const r = await fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ genres: top3 }) })
+          const d = await r.json()
+          if (d.title) await supabase.from('friends').update({ role_title: d.title }).eq('id', freshFriendAfter.id)
+        } catch {}
+      }
+    }
+
     await fetchFriends(); setRefreshing(false)
     setRefreshProgress('¡Listo! ✓'); setTimeout(()=>setRefreshProgress(''),3000)
   }
@@ -1090,7 +1111,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                       <span className="text-xs" style={{color:'var(--text-muted)'}}>{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
-                    {(selectedFriend.role_title) && (
+                    {selectedFriend.role_title && (
                       <div className="flex items-center gap-1.5 mt-1.5">
                         <Trophy size={13} className="text-purple-400" />
                         <span className="text-xs font-medium text-purple-400">{selectedFriend.role_title}</span>
