@@ -323,7 +323,8 @@ function Toast({ message }) {
 
 export default function Home() {
   const [friends, setFriends] = useState([])
-  const [view, setView] = useState('list') // 'list' | 'profile' | 'activity'
+  const [view, setView] = useState('list') // 'list' | 'profile' | 'activity' | 'insights'
+  const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
@@ -707,6 +708,7 @@ export default function Home() {
     setRefreshProgress('¡Listo! ✓'); setTimeout(()=>setRefreshProgress(''),3000)
   }
 
+  const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
   const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.last_played_at||b.started_at||0) - new Date(a.last_played_at||a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
   const activeGames = allActive.filter(g => !g.no_progress)
@@ -735,52 +737,87 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
       </Head>
-      <div className="min-h-screen" style={{fontFamily:'Inter,sans-serif'}}>
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="min-h-screen flex" style={{fontFamily:'Inter,sans-serif'}}>
 
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
-              <span className="text-2xl">🎮</span>
-              <h1 className="text-xl font-semibold text-white">Game CRM</h1>
+        {/* Sidebar — desktop only */}
+        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 min-h-screen py-6 px-3" style={{background:'rgba(255,255,255,0.01)'}}>
+          <div className="flex items-center gap-2 px-3 mb-8 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
+            <span className="text-xl">🎮</span>
+            <span className="font-semibold text-white">Game CRM</span>
+          </div>
+          <nav className="flex flex-col gap-1 flex-1">
+            {[
+              {t:'list', icon:'👥', label:'Amigos'},
+              {t:'activity', icon:'⚡', label:'Actividad'},
+              {t:'insights', icon:'✦', label:'Insights'},
+              {t:'discover', icon:'🃏', label:'Descubrir'},
+            ].map(({t,icon,label})=>(
+              <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left ${view===t||(view==='profile'&&t==='list')?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                <span>{icon}</span>{label}
+              </button>
+            ))}
+          </nav>
+          {view!=='profile' && (
+            <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all">
+              + Amigo
+            </button>
+          )}
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 min-w-0 pb-20 md:pb-0">
+        <div className="max-w-3xl mx-auto px-4 py-6">
+
+          {/* Mobile header */}
+          <div className="md:hidden flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
+              <span className="text-xl">🎮</span>
+              <span className="font-semibold text-white">Game CRM</span>
             </div>
-            <div className="flex gap-2">
-              {view!=='profile' && (
-                <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
-                  className="px-4 py-2 rounded-lg border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors">
-                  + Amigo
-                </button>
-              )}
-            </div>
+            {view==='profile' && selected && (
+              <div className="flex gap-2">
+                <button onClick={()=>{resetGameForm();setModal('game')}} className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5">+ Juego</button>
+              </div>
+            )}
+            {view!=='profile' && (
+              <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
+                className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5">
+                + Amigo
+              </button>
+            )}
           </div>
 
-          {/* Stats */}
-          {view!=='profile' && <div className="grid grid-cols-3 gap-3 mb-8">
-            {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando ahora'},{num:`${Math.round(totalHours)}h`,label:'Horas totales'}].map(s=>(
-              <div key={s.label} className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.03)'}}>
-                <div className="text-2xl font-semibold text-white">{s.num}</div>
-                <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+          {/* Stats — only on list/activity/insights */}
+          {view!=='profile' && <div className="grid grid-cols-3 gap-3 mb-6">
+            {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando'},{num:`${Math.round(totalHours)}h`,label:'Horas'}].map(s=>(
+              <div key={s.label} className="rounded-xl border border-white/5 p-3" style={{background:'rgba(255,255,255,0.03)'}}>
+                <div className="text-xl font-semibold text-white">{s.num}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
               </div>
             ))}
           </div>}
 
-          {/* Tabs */}
-          {view!=='profile' && <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
-            {[['list','Amigos'],['activity','Actividad'],['insights','✦ Insights ']].map(([t,label])=>(
-              <button key={t} onClick={()=>{setView(t);setSelected(null)}}
-                className={`px-4 py-2 rounded-lg text-sm transition-all ${(view===t||(view==='profile'&&t==='list'))?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300'}`}>
-                {label}
-              </button>
-            ))}
-          </div>}
+          {/* Search bar — only on friends list */}
+          {view==='list' && (
+            <div className="relative mb-4">
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder="Buscar amigo..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 pl-9" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">🔍</span>
+              {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-sm">✕</button>}
+            </div>
+          )}
 
           {/* Friends list */}
-          {(view==='list') && (
+          {view==='list' && (
             loading ? <div className="text-gray-500 text-sm py-8 text-center">Cargando...</div>
             : friends.length===0 ? <div className="text-center py-16 text-gray-500"><div className="text-4xl mb-3">👾</div>Sin amigos aún.</div>
             : (
               <div className="space-y-2">
-                {friends.map((f,idx)=>{
+                {filteredFriends.map((f)=>{
+                  const idx = friends.findIndex(x=>x.id===f.id)
                   const color = COLOR_MAP[COLORS[idx%COLORS.length]]
                   const actives = f.games?.filter(g=>g.status==='playing')||[]
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
@@ -820,6 +857,9 @@ export default function Home() {
                     </div>
                   )
                 })}
+                {filteredFriends.length===0 && search && (
+                  <div className="text-center py-8 text-gray-600 text-sm">No se encontró "{search}"</div>
+                )}
               </div>
             )
           )}
@@ -1380,6 +1420,25 @@ export default function Home() {
 
           </div>
         </div>
+        </div>{/* end main content */}
+      </div>{/* end flex */}
+
+      {/* Bottom bar — mobile only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:'rgba(15,15,19,0.95)', backdropFilter:'blur(12px)'}}>
+        {[
+          {t:'list', icon:'👥', label:'Amigos'},
+          {t:'activity', icon:'⚡', label:'Actividad'},
+          {t:'insights', icon:'✦', label:'Insights'},
+          {t:'discover', icon:'🃏', label:'Descubrir'},
+        ].map(({t,icon,label})=>(
+          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
+            className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all ${view===t||(view==='profile'&&t==='list')?'text-white':'text-gray-600'}`}>
+            <span className="text-lg leading-none">{icon}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
       )}
       <Toast message={successToast || refreshProgress} />
     </>
