@@ -1739,7 +1739,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             <div className="space-y-2">
               <button onClick={()=>{setGearOpen(false);refreshCovers()}} disabled={refreshing}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
-                <span>🔄</span>
+                <RefreshCw size={15} className="flex-shrink-0" />
                 <div className="text-left">
                   <div>{refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar información'}</div>
                   <div className="text-xs" style={{color:'var(--text-muted)'}}>Portadas, géneros y progreso</div>
@@ -1747,7 +1747,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               </button>
               <button onClick={()=>{setGearOpen(false);deleteFriend(selectedFriend.id)}}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-500/20 text-sm text-red-400 hover:bg-red-500/10 transition-all">
-                <span>🗑️</span>
+                <Trash2 size={15} className="flex-shrink-0 text-red-400" />
                 <div className="text-left">
                   <div>Eliminar usuario</div>
                   <div className="text-xs text-red-600">Esto elimina todos sus juegos</div>
