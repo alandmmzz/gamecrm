@@ -585,8 +585,15 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       }
       await fetchFriends()
     }
+    // Save steam_id to friend profile
+    if (selected && steamId.trim()) {
+      await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: selected, steam_id: steamId.trim() })
+      })
+    }
     setSteamImporting(false); setSteamProgress(''); setModal(null)
     setSteamId(''); setSteamGames([]); setSelectedSteamGames({})
+    showSuccess('Steam importado ✓')
   }
 
   const uploadAvatar = async (file, friendId) => {
@@ -685,6 +692,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
         })
       })
     }
+    await fetchFriends()
+    // Save wow_character to friend profile
+    await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: selected, wow_character: wowData.name, wow_realm: wowData.realm, wow_region: wowRegion })
+    })
     await fetchFriends()
     setWowSaving(false); setModal(null); setWowData(null); setWowChar(''); setWowRealm('')
     showSuccess('Personaje de WoW guardado ✓')
@@ -1037,7 +1049,17 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   <div className="flex-1">
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm text-gray-500">@{selectedFriend.username}</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {selectedFriend.steam_id && (
+                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}>🎮 Steam</span>
+                        )}
+                        {selectedFriend.wow_character && (
+                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', color:'rgb(245,158,11)'}}>⚔️ {selectedFriend.wow_character}</span>
+                        )}
+                        {!selectedFriend.steam_id && !selectedFriend.wow_character && (
+                          <span className="text-xs" style={{color:'var(--text-muted)'}}>Sin servicios vinculados</span>
+                        )}
+                      </div>
                       <span className="text-xs" style={{color:'var(--text-muted)'}}>{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
                     {(()=>{ const role = getRoleTitle(selectedFriend.games||[]); return role ? (
