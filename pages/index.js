@@ -1330,36 +1330,6 @@ export default function Home() {
               </>
             )}
 
-            {gearOpen && (
-              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setGearOpen(false)}>
-                <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:'#1a1a24'}}>
-                  <h2 className="text-base font-semibold text-white mb-1">⚙️ {selectedFriend?.name}</h2>
-                  <p className="text-xs text-gray-500 mb-5">Configuración del perfil</p>
-                  <div className="space-y-2">
-                    <button onClick={()=>{setGearOpen(false);refreshCovers()}} disabled={refreshing}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
-                      <span>🔄</span>
-                      <div className="text-left">
-                        <div>{refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar información'}</div>
-                        <div className="text-xs text-gray-600">Portadas, géneros y progreso</div>
-                      </div>
-                    </button>
-                    <button onClick={()=>{setGearOpen(false);deleteFriend(selectedFriend.id)}}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-500/20 text-sm text-red-400 hover:bg-red-500/10 transition-all">
-                      <span>🗑️</span>
-                      <div className="text-left">
-                        <div>Eliminar amigo</div>
-                        <div className="text-xs text-red-600">Esto elimina todos sus juegos</div>
-                      </div>
-                    </button>
-                  </div>
-                  <div className="flex justify-end mt-4">
-                    <button onClick={()=>setGearOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cerrar</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {modal==='wow' && (
               <>
                 <h2 className="text-base font-semibold text-white mb-1">⚔️ Conectar WoW</h2>
@@ -1443,7 +1413,36 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bottom bar — mobile only */}
+      {/* Gear modal */}
+      {gearOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setGearOpen(false)}>
+          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:'#1a1a24'}}>
+            <h2 className="text-base font-semibold text-white mb-1">⚙️ {selectedFriend?.name}</h2>
+            <p className="text-xs text-gray-500 mb-5">Configuración del perfil</p>
+            <div className="space-y-2">
+              <button onClick={()=>{setGearOpen(false);refreshCovers()}} disabled={refreshing}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
+                <span>🔄</span>
+                <div className="text-left">
+                  <div>{refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar información'}</div>
+                  <div className="text-xs text-gray-600">Portadas, géneros y progreso</div>
+                </div>
+              </button>
+              <button onClick={()=>{setGearOpen(false);deleteFriend(selectedFriend.id)}}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-500/20 text-sm text-red-400 hover:bg-red-500/10 transition-all">
+                <span>🗑️</span>
+                <div className="text-left">
+                  <div>Eliminar amigo</div>
+                  <div className="text-xs text-red-600">Esto elimina todos sus juegos</div>
+                </div>
+              </button>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button onClick={()=>setGearOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:'rgba(15,15,19,0.95)', backdropFilter:'blur(12px)'}}>
         {[
           {t:'list', icon:'👥', label:'Amigos'},
