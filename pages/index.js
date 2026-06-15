@@ -907,7 +907,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
           {/* Guest banner */}
           {!session && (
-            <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm" style={{background:'rgba(127,119,221,0.12)', borderBottom:'1px solid rgba(127,119,221,0.2)'}}>
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sticky top-0 z-20" style={{background:'rgba(127,119,221,0.15)', borderBottom:'1px solid rgba(127,119,221,0.2)', backdropFilter:'blur(8px)'}}>
               <span style={{color:'rgba(200,196,255,0.9)'}}>👋 Estás viendo la app como invitado — no podés editar nada</span>
               <button onClick={()=>router.push('/login')}
                 className="text-xs px-3 py-1 rounded-lg flex-shrink-0 transition-all"
@@ -1379,7 +1379,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     </div>
                     <button onClick={()=>{setModal(null);signOut();router.push('/login')}}
                       className="w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all"
-                      style={{border:'1px solid var(--border)',color:'var(--text-secondary)'}}>
+                      style={{border:'1px solid rgba(239,68,68,0.3)', color:'rgb(239,68,68)', background:'rgba(239,68,68,0.05)'}}>
                       ↩ Cerrar sesión
                     </button>
                   </div>
