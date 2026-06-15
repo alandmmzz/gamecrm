@@ -266,7 +266,7 @@ function InsightsView({ friends }) {
       <div>
         <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🧬 Perfiles similares</div>
         {similarPairs.length === 0
-          ? <div className="text-sm text-gray-600">No hay suficientes datos de géneros. Usá el 🔄 refresh en cada perfil.</div>
+          ? <div className="text-sm text-gray-600">No hay suficientes datos de géneros. Usá el refresh en cada perfil.</div>
           : (() => {
               const featured = similarPairs.filter(p => p.score >= 3)
               const secondary = similarPairs.filter(p => p.score === 2)
@@ -896,14 +896,14 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           <div className="mt-auto pt-4 border-t" style={{borderColor:'var(--border)'}}>
             {session ? (
               <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile')}}}>
-                {session.user.user_metadata?.avatar_url
-                  ? <img src={session.user.user_metadata.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
+                {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
+                  ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
                   : <div className="w-7 h-7 rounded-full bg-purple-900/40 flex items-center justify-center text-xs text-purple-300 flex-shrink-0">{(myProfile?.name||'?')[0]}</div>
                 }
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate group-hover:opacity-80 transition-opacity" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                 </div>
-                <button onClick={e=>{e.stopPropagation();setModal('settings')}} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes">⚙️</button>
+                <button onClick={e=>{e.stopPropagation();setModal('settings')}} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes"><Settings size={15} /></button>
               </div>
             ) : (
               <button onClick={()=>router.push('/login')}
@@ -1336,7 +1336,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             {modal==='settings' && (
               <>
-                <h2 className="text-base font-semibold mb-6" style={{color:'var(--text-primary)'}}>⚙️ Ajustes</h2>
+                <h2 className="text-base font-semibold mb-6 flex items-center gap-2" style={{color:'var(--text-primary)'}}><Settings size={16} /> Ajustes</h2>
                 <div className="mb-6">
                   <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Apariencia</div>
                   <div className="space-y-2">

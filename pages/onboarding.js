@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link, Sparkles, Camera, Rocket } from 'lucide-react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
@@ -27,7 +28,7 @@ export default function Onboarding() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && !isAdminMode) { router.replace('/login'); return }
       setSession(session)
-      if (session) {
+      if (session && !isAdminMode) {
         const n = session.user.user_metadata?.full_name ||
                   session.user.user_metadata?.name ||
                   session.user.user_metadata?.login || ''
@@ -140,13 +141,13 @@ export default function Onboarding() {
               <button onClick={()=>setStep('claim')}
                 className="w-full p-4 rounded-2xl border text-left transition-all hover:border-purple-500/40"
                 style={{background:'rgba(255,255,255,0.03)', borderColor:'rgba(255,255,255,0.08)'}}>
-                <div className="font-medium text-white mb-1">🔗 Ya tengo un perfil creado</div>
+                <div className="font-medium text-white mb-1 flex items-center gap-2"><Link size={16} /> Ya tengo un perfil creado</div>
                 <div className="text-sm text-gray-500">Alguien ya me agregó — quiero vincular mi cuenta</div>
               </button>
               <button onClick={()=>setStep('create')}
                 className="w-full p-4 rounded-2xl border text-left transition-all hover:border-purple-500/40"
                 style={{background:'rgba(255,255,255,0.03)', borderColor:'rgba(255,255,255,0.08)'}}>
-                <div className="font-medium text-white mb-1">✨ Crear mi perfil nuevo</div>
+                <div className="font-medium text-white mb-1 flex items-center gap-2"><Sparkles size={16} /> Crear mi perfil nuevo</div>
                 <div className="text-sm text-gray-500">Primera vez — quiero armar mi perfil desde cero</div>
               </button>
             </div>
@@ -205,7 +206,7 @@ export default function Onboarding() {
                       : <span className="text-2xl">👤</span>
                     }
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
-                      <span className="text-xs text-white">📷</span>
+                      <Camera size={14} className="text-white" />
                     </div>
                   </div>
                   <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
@@ -249,7 +250,7 @@ export default function Onboarding() {
               <button onClick={createProfile} disabled={saving || !name.trim()}
                 className="w-full py-3 rounded-xl text-sm font-medium text-white disabled:opacity-50 transition-all"
                 style={{background:'rgba(127,119,221,0.8)'}}>
-                {saving ? 'Creando perfil...' : '🚀 Crear mi perfil'}
+                {saving ? 'Creando perfil...' : 'Crear mi perfil'}
               </button>
             </div>
           )}
