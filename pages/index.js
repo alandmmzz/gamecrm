@@ -741,6 +741,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   }
 
   const isOwner = (friendId) => myProfile?.id === friendId
+  const isAdmin = myProfile?.is_admin === true
+  const [adminView, setAdminView] = useState(true)
+  const canEdit = (friendId) => (isAdmin && adminView) || isOwner(friendId)
   const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
   const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.last_played_at||b.started_at||0) - new Date(a.last_played_at||a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
@@ -800,15 +803,15 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {/* User section at bottom */}
           <div className="mt-auto pt-4 border-t" style={{borderColor:'var(--border)'}}>
             {session ? (
-              <div className="flex items-center gap-2 px-1">
+              <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile')}}}>
                 {session.user.user_metadata?.avatar_url
                   ? <img src={session.user.user_metadata.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
                   : <div className="w-7 h-7 rounded-full bg-purple-900/40 flex items-center justify-center text-xs text-purple-300 flex-shrink-0">{(myProfile?.name||'?')[0]}</div>
                 }
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
+                  <div className="text-xs font-medium truncate group-hover:opacity-80 transition-opacity" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                 </div>
-                <button onClick={()=>setModal('settings')} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes">⚙️</button>
+                <button onClick={e=>{e.stopPropagation();setModal('settings')}} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes">⚙️</button>
               </div>
             ) : (
               <button onClick={()=>router.push('/login')}
@@ -950,7 +953,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                     ) : null })()}
                   </div>
-                  {isOwner(selectedFriend?.id) && (
+                  {canEdit(selectedFriend?.id) && (
                     <button onClick={()=>setGearOpen(true)} title="Configuración"
                       className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all text-base">
                       ⚙️
@@ -969,7 +972,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           <span className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</span>
                           <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            {isOwner(selectedFriend?.id) && <>
+                            {canEdit(selectedFriend?.id) && <>
                               <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
                               <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
                             </>}
@@ -1000,7 +1003,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
                                 <div className="flex gap-1 flex-shrink-0">
-                                  {isOwner(selectedFriend?.id) && <>
+                                  {canEdit(selectedFriend?.id) && <>
                                     <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
                                     <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
                                     <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
@@ -1083,7 +1086,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             )}
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            {isOwner(selectedFriend?.id) && <>
+                            {canEdit(selectedFriend?.id) && <>
                               <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✏️</button>
                               <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
                             </>}
@@ -1242,6 +1245,34 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     })}
                   </div>
                 </div>
+                {isAdmin && (
+                  <div className="mt-6 pt-4" style={{borderTop:'1px solid var(--border)'}}>
+                    <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Admin</div>
+                    <div className="space-y-2">
+                      {[
+                        {value:true, label:'👑 Vista admin', desc:'Podés editar cualquier perfil'},
+                        {value:false, label:'👤 Vista normal', desc:'Ves la app como tus amigos'},
+                      ].map(opt => {
+                        const isSelected = adminView === opt.value
+                        return (
+                          <label key={String(opt.value)} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all"
+                            style={{
+                              borderColor: isSelected ? 'rgba(127,119,221,0.5)' : 'var(--border)',
+                              background: isSelected ? 'rgba(127,119,221,0.08)' : 'transparent'
+                            }}>
+                            <input type="radio" name="adminView" checked={isSelected}
+                              onChange={()=>setAdminView(opt.value)} className="accent-purple-500" />
+                            <div>
+                              <div className="text-sm" style={{color:'var(--text-primary)'}}>{opt.label}</div>
+                              <div className="text-xs" style={{color:'var(--text-muted)'}}>{opt.desc}</div>
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {session && (
                   <div className="mt-6 pt-4" style={{borderTop:'1px solid var(--border)'}}>
                     <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Cuenta</div>
@@ -1581,7 +1612,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       </div>
 
       {/* FAB — only in profile view and only for owner */}
-      {view === 'profile' && selectedFriend && isOwner(selectedFriend.id) && (
+      {view === 'profile' && selectedFriend && canEdit(selectedFriend.id) && (
         <div className="fixed bottom-24 md:bottom-8 right-6 z-40 flex flex-col items-end gap-2">
           {fabOpen && (
             <div className="flex flex-col items-end gap-2 mb-2">
