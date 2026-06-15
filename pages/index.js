@@ -391,14 +391,17 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   useEffect(() => { fetchFriends() }, [])
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       setSession(session)
       if (session) {
         const profile = await getOrCreateProfile(session)
         setMyProfile(profile)
       }
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    }
+    initAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       if (session) {
         const profile = await getOrCreateProfile(session)
@@ -951,10 +954,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                     ) : null })()}
                   </div>
-                  <button onClick={()=>setGearOpen(true)} title="Configuración"
-                    className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all text-base">
-                    ⚙️
-                  </button>
+                  {isOwner(selectedFriend?.id) && (
+                    <button onClick={()=>setGearOpen(true)} title="Configuración"
+                      className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all text-base">
+                      ⚙️
+                    </button>
+                  )}
                 </div>
 
                 {/* Recurring games badges */}
@@ -968,8 +973,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           <span className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</span>
                           <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
-                            <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
+                            {isOwner(selectedFriend?.id) && <>
+                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
+                              <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
+                            </>}
                           </div>
                         </div>
                       ))}
@@ -997,9 +1004,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
                                 <div className="flex gap-1 flex-shrink-0">
-                                  <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
-                                  <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
-                                  <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
+                                  {isOwner(selectedFriend?.id) && <>
+                                    <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
+                                    <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
+                                    <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
+                                  </>}
                                 </div>
                               </div>
                               {(g.last_played_at||g.started_at) && <div className="text-xs text-gray-600 mb-2">Último juego {fmtDate(g.last_played_at||g.started_at)}</div>}
@@ -1078,8 +1087,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             )}
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✏️</button>
-                            <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
+                            {isOwner(selectedFriend?.id) && <>
+                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✏️</button>
+                              <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
+                            </>}
                           </div>
                         </div>
                       ))}
@@ -1569,8 +1580,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
         ))}
       </div>
 
-      {/* FAB — only in profile view */}
-      {view === 'profile' && selectedFriend && (
+      {/* FAB — only in profile view and only for owner */}
+      {view === 'profile' && selectedFriend && isOwner(selectedFriend.id) && (
         <div className="fixed bottom-24 md:bottom-8 right-6 z-40 flex flex-col items-end gap-2">
           {fabOpen && (
             <div className="flex flex-col items-end gap-2 mb-2">
