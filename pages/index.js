@@ -39,22 +39,22 @@ function getRoleTitle(games) {
   const has = (...gs) => gs.every(g => top.some(t => t.includes(g)))
   const any = (...gs) => gs.some(g => top.some(t => t.includes(g)))
 
-  if (has('action') && has('rpg')) return { title: 'Espadachín de Mundos Abiertos', icon: '⚔️' }
-  if (has('action') && has('shooter')) return { title: 'Máquina de Guerra', icon: '🔫' }
-  if (has('rpg') && has('strategy')) return { title: 'Gran Estratega', icon: '🧠' }
-  if (has('horror') && has('action')) return { title: 'Cazador de Pesadillas', icon: '💀' }
-  if (has('indie') && has('platformer')) return { title: 'Guardián de los Indies', icon: '🎪' }
-  if (has('adventure') && has('rpg')) return { title: 'Explorador de Leyendas', icon: '🗺️' }
-  if (has('sports') && has('racing')) return { title: 'Atleta Digital', icon: '🏆' }
-  if (has('puzzle') && has('strategy')) return { title: 'Maestro del Ingenio', icon: '🧩' }
-  if (any('rpg')) return total > 500 ? { title: 'Veterano de las RPG', icon: '🧙' } : { title: 'Aprendiz del Rol', icon: '📜' }
-  if (any('action')) return total > 300 ? { title: 'Guerrero Curtido', icon: '🗡️' } : { title: 'Soldado en Entrenamiento', icon: '🪖' }
-  if (any('horror')) return { title: 'Alma Valiente', icon: '👻' }
-  if (any('indie')) return { title: 'Fanático del Indie', icon: '🎮' }
-  if (any('strategy')) return { title: 'Mente Táctica', icon: '♟️' }
-  if (any('adventure')) return { title: 'Espíritu Aventurero', icon: '🌍' }
-  if (any('casual')) return { title: 'Jugador Casual', icon: '🛋️' }
-  return { title: 'Gamer Inclasificable', icon: '🎲' }
+  if (has('action') && has('rpg')) return { title: 'Espadachín de Mundos Abiertos', icon: '⚔' }
+  if (has('action') && has('shooter')) return { title: 'Máquina de Guerra', icon: '🎯' }
+  if (has('rpg') && has('strategy')) return { title: 'Gran Estratega', icon: '◆' }
+  if (has('horror') && has('action')) return { title: 'Cazador de Pesadillas', icon: '☠' }
+  if (has('indie') && has('platformer')) return { title: 'Guardián de los Indies', icon: '◉' }
+  if (has('adventure') && has('rpg')) return { title: 'Explorador de Leyendas', icon: '◎' }
+  if (has('sports') && has('racing')) return { title: 'Atleta Digital', icon: '★' }
+  if (has('puzzle') && has('strategy')) return { title: 'Maestro del Ingenio', icon: '◈' }
+  if (any('rpg')) return total > 500 ? { title: 'Veterano de las RPG', icon: '◇' } : { title: 'Aprendiz del Rol', icon: '◉' }
+  if (any('action')) return total > 300 ? { title: 'Guerrero Curtido', icon: '⚔' } : { title: 'Soldado en Entrenamiento', icon: '◆' }
+  if (any('horror')) return { title: 'Alma Valiente', icon: '◎' }
+  if (any('indie')) return { title: 'Fanático del Indie', icon: '◉' }
+  if (any('strategy')) return { title: 'Mente Táctica', icon: '◈' }
+  if (any('adventure')) return { title: 'Espíritu Aventurero', icon: '◎' }
+  if (any('casual')) return { title: 'Jugador Casual', icon: '◇' }
+  return { title: 'Gamer Inclasificable', icon: '◆' }
 }
 
 function GenreRadarChart({ games }) {
@@ -999,7 +999,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-900/40 text-purple-300">yo</span>}</div>
                           <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
                             {(()=>{ const role = getRoleTitle(f.games||[]); return role ? (
-                              <span className="flex items-center gap-1"><span>{role.icon}</span><span className="text-purple-400">{role.title}</span></span>
+                              <span className="flex items-center gap-1"><Trophy size={12} className="text-purple-400" /><span className="text-purple-400">{role.title}</span></span>
                             ) : <span className="text-gray-600">Sin géneros aún</span> })()}
                           </div>
                         </div>
@@ -1065,7 +1065,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     </div>
                     {(()=>{ const role = getRoleTitle(selectedFriend.games||[]); return role ? (
                       <div className="flex items-center gap-1.5 mt-1.5">
-                        <span>{role.icon}</span>
+                        <Trophy size={13} className="text-purple-400" />
                         <span className="text-xs font-medium text-purple-400">{role.title}</span>
                       </div>
                     ) : null })()}
@@ -1726,7 +1726,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       {gearOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setGearOpen(false)}>
           <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:"var(--bg-modal)"}}>
-            <h2 className="text-base font-semibold text-white mb-1">⚙️ {selectedFriend?.name}</h2>
+            <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><Settings size={16} /> {selectedFriend?.name}</h2>
             <p className="text-xs text-gray-500 mb-5">Configuración del perfil</p>
             <div className="space-y-2">
               <button onClick={()=>{setGearOpen(false);refreshCovers()}} disabled={refreshing}
@@ -1741,7 +1741,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-500/20 text-sm text-red-400 hover:bg-red-500/10 transition-all">
                 <span>🗑️</span>
                 <div className="text-left">
-                  <div>Eliminar amigo</div>
+                  <div>Eliminar usuario</div>
                   <div className="text-xs text-red-600">Esto elimina todos sus juegos</div>
                 </div>
               </button>
