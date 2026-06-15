@@ -866,12 +866,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     // Generate role title
     if (f) {
       setRefreshProgress('Generando rol...')
+      console.log('updatedGenres:', updatedGenres)
       const top3 = Object.entries(updatedGenres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
+      console.log('top3:', top3)
       if (top3.length) {
         try {
           const r = await fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ genres: top3 }) })
           const d = await r.json()
-          if (d.title) await supabase.from('friends').update({ role_title: d.title }).eq('id', f.id)
+          console.log('role response:', d)
+          if (d.title) {
+            const res = await supabase.from('friends').update({ role_title: d.title }).eq('id', f.id)
+            console.log('supabase update:', res)
+          }
         } catch (e) { console.error('role error', e) }
       }
     }
