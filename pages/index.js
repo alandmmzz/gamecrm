@@ -895,18 +895,6 @@ export default function Home() {
                       </div>
                     ) : null })()}
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={()=>{setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
-                      className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-green-500/30 hover:bg-green-500/10 transition-colors">🎮 Steam</button>
-                    <button onClick={()=>{setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
-                      className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors">⚔️ WoW</button>
-                    <button onClick={()=>{resetGameForm();setModal('game')}}
-                      className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">+ Juego</button>
-                    <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
-                      className="text-gray-600 hover:text-blue-400 text-sm px-2 py-1 rounded border border-white/5 hover:border-blue-500/20 transition-colors disabled:opacity-50">🔄</button>
-                    <button onClick={()=>deleteFriend(selectedFriend.id)}
-                      className="text-gray-600 hover:text-red-400 text-sm px-2 py-1 rounded border border-white/5 hover:border-red-500/20 transition-colors">🗑️</button>
-                  </div>
                 </div>
 
                 {/* Recurring games badges */}
