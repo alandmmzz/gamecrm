@@ -1,0 +1,79 @@
+async function getBlizzardToken() {
+  const creds = Buffer.from(`${process.env.BLIZZARD_CLIENT_ID}:${process.env.BLIZZARD_CLIENT_SECRET}`).toString('base64')
+  const r = await fetch('https://oauth.battle.net/token', {
+    method: 'POST',
+    headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials'
+  })
+  const d = await r.json()
+  return d.access_token
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).end()
+
+  const { character, realm, region = 'us' } = req.query
+  if (!character || !realm) return res.status(400).json({ error: 'character and realm required' })
+
+  if (!process.env.BLIZZARD_CLIENT_ID) return res.status(500).json({ error: 'Blizzard API not configured' })
+
+  try {
+    const token = await getBlizzardToken()
+    const base = `https://${region}.api.blizzard.com`
+    const charSlug = character.toLowerCase()
+    const realmSlug = realm.toLowerCase().replace(/\s+/g, '-').replace(/'/g, '')
+    const locale = region === 'eu' ? 'es_ES' : 'en_US'
+    const q = `?namespace=profile-${region}&locale=${locale}&access_token=${token}`
+
+    // Fetch character summary
+    const [summaryRes, equipRes, raidsRes] = await Promise.all([
+      fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}${q}`),
+      fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/equipment${q}`),
+      fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
+    ])
+
+    const summary = await summaryRes.json()
+    if (summary.code === 404 || summary.code === 403) {
+      return res.status(404).json({ error: 'Personaje no encontrado. Verificá el nombre, reino y región.' })
+    }
+
+    const equip = await equipRes.json()
+    const raids = await raidsRes.json()
+
+    // Get current raid progress (latest expansion)
+    let raidProgress = null
+    if (raids.expansions) {
+      const latest = raids.expansions[raids.expansions.length - 1]
+      if (latest?.instances) {
+        raidProgress = latest.instances.map(inst => {
+          const mythic = inst.modes?.find(m => m.difficulty?.type === 'MYTHIC')
+          const heroic = inst.modes?.find(m => m.difficulty?.type === 'HEROIC')
+          const normal = inst.modes?.find(m => m.difficulty?.type === 'NORMAL')
+          const best = mythic || heroic || normal
+          return {
+            name: inst.instance?.name,
+            progress: best ? `${best.progress?.completed_count || 0}/${best.progress?.total_count || 0}` : null,
+            difficulty: best?.difficulty?.type?.toLowerCase() || null,
+          }
+        }).filter(r => r.progress)
+      }
+    }
+
+    return res.status(200).json({
+      name: summary.name,
+      realm: summary.realm?.name,
+      region: region.toUpperCase(),
+      level: summary.level,
+      race: summary.race?.name,
+      class: summary.character_class?.name,
+      spec: summary.active_spec?.name,
+      ilvl: summary.equipped_item_level,
+      avatar: summary.media?.assets?.find(a => a.key === 'avatar')?.value || null,
+      raid_progress: raidProgress,
+      achievement_points: summary.achievement_points,
+      faction: summary.faction?.name,
+    })
+  } catch (e) {
+    return res.status(500).json({ error: e.message })
+  }
+}
