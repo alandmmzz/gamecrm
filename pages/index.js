@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
-import { getOrCreateProfile, signOut } from '../lib/auth'
+import { getProfile, signOut } from '../lib/auth'
 import Head from 'next/head'
 
 const COLORS = ['purple', 'teal', 'coral', 'blue', 'amber']
@@ -402,7 +402,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       const { data: { session } } = await supabase.auth.getSession()
       setSession(session)
       if (session) {
-        const profile = await getOrCreateProfile(session)
+        const profile = await getProfile(session)
+        if (!profile) {
+          router.replace('/onboarding')
+          return
+        }
         setMyProfile(profile)
       }
     }
@@ -411,7 +415,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       if (session) {
-        const profile = await getOrCreateProfile(session)
+        const profile = await getProfile(session)
+        if (!profile) {
+          router.replace('/onboarding')
+          return
+        }
         setMyProfile(profile)
         fetchFriends()
       } else {
