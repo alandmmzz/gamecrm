@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, GitMerge, Medal, ChevronRight, Gamepad2, Sword } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, GitMerge, Medal, ChevronRight, Gamepad2, Sword, Sun, Moon, Monitor, Crown, UserCheck, Steam, Swords, PlusCircle, Wand2, RotateCw } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -1341,9 +1341,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Apariencia</div>
                   <div className="space-y-2">
                     {[
-                      {value:'light', label:'☀️ Claro'},
-                      {value:'dark', label:'🌙 Oscuro'},
-                      {value:'system', label:'💻 Según el sistema'},
+                      {value:'light', Icon:Sun, label:'Claro'},
+                      {value:'dark', Icon:Moon, label:'Oscuro'},
+                      {value:'system', Icon:Monitor, label:'Según el sistema'},
                     ].map(opt => {
                       const isSelected = opt.value === 'system' ? usingSystem : (!usingSystem && theme === opt.value)
                       return (
@@ -1380,7 +1380,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             <input type="radio" name="adminView" checked={isSelected}
                               onChange={()=>setAdminView(opt.value)} className="accent-purple-500" />
                             <div>
-                              <div className="text-sm" style={{color:'var(--text-primary)'}}>{opt.label}</div>
+                              <div className="text-sm flex items-center gap-2" style={{color:'var(--text-primary)'}}><opt.Icon size={14} />{opt.label}</div>
                               <div className="text-xs" style={{color:'var(--text-muted)'}}>{opt.desc}</div>
                             </div>
                           </label>
@@ -1403,7 +1403,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <button onClick={()=>{setModal(null);signOut();router.push('/login')}}
                       className="w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all"
                       style={{border:'1px solid rgba(239,68,68,0.3)', color:'rgb(239,68,68)', background:'rgba(239,68,68,0.05)'}}>
-                      ↩ Cerrar sesión
+                      <span className="flex items-center gap-2"><LogOut size={14} /> Cerrar sesión</span>
                     </button>
                   </div>
                 )}
@@ -1778,25 +1778,25 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <button onClick={()=>{setFabOpen(false);resetGameForm();setModal('game')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-white/10 shadow-lg transition-all hover:bg-white/10"
                 style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
-                <span>➕</span> Agregar juego
+                <Plus size={15} /> Agregar juego
               </button>
               <button onClick={()=>{setFabOpen(false);setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-green-500/20 shadow-lg transition-all hover:bg-green-500/10"
                 style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
-                <span>🎮</span> Importar Steam
+                <Gamepad2 size={15} /> Importar Steam
               </button>
               <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
                 style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
-                <span>⚔️</span> Vincular WoW
+                <Swords size={15} /> Vincular WoW
               </button>
 
             </div>
           )}
           <button onClick={()=>setFabOpen(p=>!p)}
-            className="w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all"
+            className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all"
             style={{background: fabOpen ? 'rgba(127,119,221,0.9)' : 'rgba(127,119,221,0.8)', backdropFilter:'blur(8px)'}}>
-            {fabOpen ? '✕' : '+'}
+            <Plus size={24} className="text-white transition-transform duration-300" style={{transform: fabOpen ? 'rotate(45deg)' : 'rotate(0deg)'}} />
           </button>
         </div>
       )}
