@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { supabase } from '../lib/supabase'
+import { getOrCreateProfile, signOut } from '../lib/auth'
 import Head from 'next/head'
 
 const COLORS = ['purple', 'teal', 'coral', 'blue', 'amber']
@@ -323,6 +326,9 @@ function Toast({ message }) {
 
 export default function Home({ theme, usingSystem, setThemeValue }) {
   const [friends, setFriends] = useState([])
+  const router = useRouter()
+  const [session, setSession] = useState(null)
+  const [myProfile, setMyProfile] = useState(null)
   const [view, setView] = useState('list') // 'list' | 'profile' | 'activity' | 'insights'
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
@@ -383,6 +389,27 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     setLoading(false)
   }
   useEffect(() => { fetchFriends() }, [])
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session)
+      if (session) {
+        const profile = await getOrCreateProfile(session)
+        setMyProfile(profile)
+      }
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session)
+      if (session) {
+        const profile = await getOrCreateProfile(session)
+        setMyProfile(profile)
+        fetchFriends()
+      } else {
+        setMyProfile(null)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const searchHltb = async (q) => {
     if (!q || q.length < 2) { setHltbResults([]); return }
@@ -710,6 +737,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     setRefreshProgress('¡Listo! ✓'); setTimeout(()=>setRefreshProgress(''),3000)
   }
 
+  const isOwner = (friendId) => myProfile?.id === friendId
   const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
   const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.last_played_at||b.started_at||0) - new Date(a.last_played_at||a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
@@ -765,10 +793,31 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               </button>
             ))}
             <button onClick={()=>setModal('settings')}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left mt-auto"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left"
               style={{color:'var(--text-nav)'}}>
               <span>⚙️</span>Ajustes
             </button>
+          {/* User section at bottom */}
+          <div className="px-3 pt-3 border-t mt-3" style={{borderColor:'var(--border)'}}>
+            {session ? (
+              <div className="flex items-center gap-2">
+                {session.user.user_metadata?.avatar_url
+                  ? <img src={session.user.user_metadata.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
+                  : <div className="w-7 h-7 rounded-full bg-purple-900/40 flex items-center justify-center text-xs text-purple-300 flex-shrink-0">{(myProfile?.name||'?')[0]}</div>
+                }
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
+                </div>
+                <button onClick={()=>signOut()} className="text-xs px-2 py-1 rounded-lg transition-all" style={{color:'var(--text-muted)'}} title="Cerrar sesión">↩</button>
+              </div>
+            ) : (
+              <button onClick={()=>router.push('/login')}
+                className="w-full text-left text-xs px-3 py-2 rounded-xl transition-all"
+                style={{color:'var(--text-muted)', border:'1px solid var(--border)'}}>
+                🔑 Entrar / Registrarse
+              </button>
+            )}
+          </div>
           </nav>
         </div>
 
@@ -838,7 +887,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           {initials(f.name)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</div>
+                          <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-900/40 text-purple-300">yo</span>}</div>
                           <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
                             {(()=>{ const role = getRoleTitle(f.games||[]); return role ? (
                               <span className="flex items-center gap-1"><span>{role.icon}</span><span className="text-purple-400">{role.title}</span></span>
@@ -1186,7 +1235,24 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     })}
                   </div>
                 </div>
-                <div className="flex justify-end">
+                {session && (
+                  <div className="mt-6 pt-4" style={{borderTop:'1px solid var(--border)'}}>
+                    <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Cuenta</div>
+                    <div className="flex items-center gap-3 mb-3">
+                      {session.user.user_metadata?.avatar_url && <img src={session.user.user_metadata.avatar_url} className="w-8 h-8 rounded-full" />}
+                      <div>
+                        <div className="text-sm font-medium" style={{color:'var(--text-primary)'}}>{myProfile?.name}</div>
+                        <div className="text-xs" style={{color:'var(--text-muted)'}}>{session.user.email}</div>
+                      </div>
+                    </div>
+                    <button onClick={()=>{setModal(null);signOut();router.push('/login')}}
+                      className="w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all"
+                      style={{border:'1px solid var(--border)',color:'var(--text-secondary)'}}>
+                      ↩ Cerrar sesión
+                    </button>
+                  </div>
+                )}
+                <div className="flex justify-end mt-4">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm" style={{color:'var(--text-secondary)'}}>Cerrar</button>
                 </div>
               </>
