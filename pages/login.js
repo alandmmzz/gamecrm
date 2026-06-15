@@ -9,27 +9,24 @@ export default function Login({ theme, usingSystem, setThemeValue }) {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    // Check if we have a session already
+    // Check for error from callback
+    if (router.query.error) {
+      console.error('Auth error:', router.query.error)
+      setChecking(false)
+      return
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) router.replace('/')
       else setChecking(false)
     })
-
-    // Listen for auth changes (handles redirect back from OAuth)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        router.replace('/')
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+  }, [router.query])
 
   const loginWith = async (provider) => {
     setLoading(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth-callback.html`,
+        redirectTo: `${window.location.origin}/api/auth/callback`,
       }
     })
     if (error) { console.error(error); setLoading(false) }
@@ -51,7 +48,11 @@ export default function Login({ theme, usingSystem, setThemeValue }) {
             <h1 className="text-2xl font-semibold mb-2" style={{color:'var(--text-primary)'}}>Game CRM</h1>
             <p className="text-sm" style={{color:'var(--text-muted)'}}>Seguí los juegos de tus amigos</p>
           </div>
-
+          {router.query.error && (
+            <div className="mb-4 p-3 rounded-xl text-sm text-red-400" style={{background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)'}}>
+              Error al iniciar sesión. Intentá de nuevo.
+            </div>
+          )}
           <div className="space-y-3">
             <button onClick={()=>loginWith('github')} disabled={loading}
               className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
@@ -61,7 +62,6 @@ export default function Login({ theme, usingSystem, setThemeValue }) {
               </svg>
               {loading ? 'Redirigiendo...' : 'Continuar con GitHub'}
             </button>
-
             <button onClick={()=>loginWith('google')} disabled={loading}
               className="w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
               style={{background:'var(--bg-card)', border:'1px solid var(--border)', color:'var(--text-primary)'}}>
@@ -74,7 +74,6 @@ export default function Login({ theme, usingSystem, setThemeValue }) {
               {loading ? 'Redirigiendo...' : 'Continuar con Google'}
             </button>
           </div>
-
           <p className="text-center text-xs mt-8" style={{color:'var(--text-muted)'}}>
             Los perfiles son públicos — cualquiera puede verlos sin registrarse.
           </p>
