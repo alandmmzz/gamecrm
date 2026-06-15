@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, GitMerge, Medal, ChevronRight, Gamepad2, Sword } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -874,11 +875,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           </div>
           <nav className="flex flex-col gap-1">
             {[
-              {t:'list', icon:'👥', label:'Amigos'},
-              {t:'activity', icon:'⚡', label:'Actividad'},
-              {t:'insights', icon:'✦', label:'Insights'},
-              {t:'discover', icon:'🃏', label:'Descubrir'},
-            ].map(({t,icon,label})=>(
+              {t:'list', Icon:Users, label:'Amigos'},
+              {t:'activity', Icon:Zap, label:'Actividad'},
+              {t:'insights', Icon:Sparkles, label:'Insights'},
+              {t:'discover', Icon:Layers, label:'Descubrir'},
+            ].map(({t,Icon,label})=>(
               <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left`}
                 style={{
@@ -886,7 +887,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   color: view===t||(view==='profile'&&t==='list') ? 'var(--text-nav-active)' : 'var(--text-nav)',
                   fontWeight: view===t||(view==='profile'&&t==='list') ? 500 : 400,
                 }}>
-                <span>{icon}</span>{label}
+                <Icon size={16} />{label}
               </button>
             ))}
           </nav>
@@ -908,7 +909,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <button onClick={()=>router.push('/login')}
                 className="w-full text-left text-xs px-3 py-2 rounded-xl transition-all"
                 style={{color:'var(--text-muted)', border:'1px solid var(--border)'}}>
-                🔑 Entrar / Registrarse
+                <span className="flex items-center gap-2"><LogIn size={14} /> Entrar / Registrarse</span>
               </button>
             )}
           </div>
@@ -963,8 +964,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <input value={search} onChange={e=>setSearch(e.target.value)}
                   placeholder="Buscar amigo..."
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 pl-9" />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">🔍</span>
-                {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-sm">✕</button>}
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400"><X size={14} /></button>}
               </div>
               {(isAdmin && adminView) && (
                 <button onClick={()=>router.push('/onboarding?admin=1')}
@@ -1006,7 +1007,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           <div className="text-sm text-white font-medium">{f.games?.length||0} juego{f.games?.length!==1?'s':''}</div>
                           <div className="text-xs" style={{color:'var(--text-muted)'}}>{Math.round(totalH)}h</div>
                         </div>
-                        <span className="text-gray-600 text-sm flex-shrink-0">›</span>
+                        <ChevronRight size={16} className="text-gray-600 flex-shrink-0" />
                       </div>
                       {actives.length>0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3">
@@ -1071,8 +1072,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   </div>
                   {canEdit(selectedFriend?.id) && (
                     <button onClick={()=>setGearOpen(true)} title="Configuración"
-                      className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all text-base">
-                      ⚙️
+                      className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all">
+                      <Settings size={16} />
                     </button>
                   )}
                 </div>
@@ -1751,20 +1752,20 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       )}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bg-bottombar)", backdropFilter:"blur(12px)"}}>
         {[
-          {t:'list', icon:'👥', label:'Amigos'},
-          {t:'activity', icon:'⚡', label:'Actividad'},
-          {t:'insights', icon:'✦', label:'Insights'},
-          {t:'discover', icon:'🃏', label:'Descubrir'},
-        ].map(({t,icon,label})=>(
+          {t:'list', Icon:Users, label:'Amigos'},
+          {t:'activity', Icon:Zap, label:'Actividad'},
+          {t:'insights', Icon:Sparkles, label:'Insights'},
+          {t:'discover', Icon:Layers, label:'Descubrir'},
+        ].map(({t,Icon,label})=>(
           <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
             className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all ${view===t||(view==='profile'&&t==='list')?'text-white':'text-gray-600'}`}>
-            <span className="text-lg leading-none">{icon}</span>
+            <Icon size={20} />
             <span>{label}</span>
           </button>
         ))}
         <button onClick={()=>setModal('settings')}
           className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all text-gray-600`}>
-          <span className="text-lg leading-none">⚙️</span>
+          <Settings size={20} />
           <span>Ajustes</span>
         </button>
       </div>
