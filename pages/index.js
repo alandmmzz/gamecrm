@@ -427,23 +427,6 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   useEffect(() => { fetchFriends() }, [])
 
   useEffect(() => {
-    const saved = localStorage.getItem('adminView')
-    if (saved !== null) setAdminView(saved === 'true')
-    const handler = (e) => { if (e.key === 'adminView') setAdminView(e.newValue === 'true') }
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
-  }, [])
-
-  useEffect(() => {
-    if (!selectedFriend) return
-    if (selectedFriend.role_title) { setGeneratedRole(selectedFriend.role_title); return }
-    setGeneratedRole(null)
-    generateRoleTitle(selectedFriend).then(title => {
-      if (title) setGeneratedRole(title)
-    })
-  }, [selectedFriend?.id])
-
-  useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setSession(session)
@@ -1107,10 +1090,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                       <span className="text-xs" style={{color:'var(--text-muted)'}}>{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
-                    {(generatedRole || selectedFriend.role_title) && (
+                    {(selectedFriend.role_title) && (
                       <div className="flex items-center gap-1.5 mt-1.5">
                         <Trophy size={13} className="text-purple-400" />
-                        <span className="text-xs font-medium text-purple-400">{generatedRole || selectedFriend.role_title}</span>
+                        <span className="text-xs font-medium text-purple-400">{selectedFriend.role_title}</span>
                       </div>
                     )}
                   </div>
