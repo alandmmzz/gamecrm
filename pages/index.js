@@ -875,8 +875,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           const d = await r.json()
           console.log('role response:', d)
           if (d.title) {
-            const res = await supabase.from('friends').update({ role_title: d.title }).eq('id', f.id)
-            console.log('supabase update:', res)
+            const res = await fetch('/api/friends', { method:'PATCH', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ id: f.id, role_title: d.title }) })
+            console.log('api update:', res.status)
           }
         } catch (e) { console.error('role error', e) }
       }
