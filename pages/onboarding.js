@@ -5,8 +5,9 @@ import { supabase } from '../lib/supabase'
 
 export default function Onboarding() {
   const router = useRouter()
+  const isAdminMode = router.query.admin === '1'
   const [session, setSession] = useState(null)
-  const [step, setStep] = useState('choose') // 'choose' | 'claim' | 'create'
+  const [step, setStep] = useState('choose')
   const [friends, setFriends] = useState([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
@@ -24,17 +25,18 @@ export default function Onboarding() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { router.replace('/login'); return }
+      if (!session && !isAdminMode) { router.replace('/login'); return }
       setSession(session)
-      // Pre-fill name from OAuth
-      const n = session.user.user_metadata?.full_name ||
-                session.user.user_metadata?.name ||
-                session.user.user_metadata?.login || ''
-      setName(n)
-      // Pre-fill avatar preview from OAuth
-      const av = session.user.user_metadata?.avatar_url
-      if (av) setAvatarPreview(av)
+      if (session) {
+        const n = session.user.user_metadata?.full_name ||
+                  session.user.user_metadata?.name ||
+                  session.user.user_metadata?.login || ''
+        setName(n)
+        const av = session.user.user_metadata?.avatar_url
+        if (av) setAvatarPreview(av)
+      }
     })
+    if (isAdminMode) setStep('create')
     // Load all unlinked friends
     fetch('/api/friends').then(r=>r.json()).then(data => {
       setFriends((data||[]).filter(f => !f.user_id))
@@ -71,7 +73,7 @@ export default function Onboarding() {
       const res = await fetch('/api/friends', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: name.trim(), username: name.trim().toLowerCase().replace(/\s+/g,'_'), user_id: session.user.id })
+        body: JSON.stringify({ name: name.trim(), username: name.trim().toLowerCase().replace(/\s+/g,'_'), user_id: isAdminMode ? null : session?.user?.id || null })
       })
       const friend = await res.json()
 
@@ -190,8 +192,8 @@ export default function Onboarding() {
 
           {step === 'create' && (
             <div>
-              <button onClick={()=>setStep('choose')} className="text-sm text-gray-500 hover:text-gray-300 mb-5 flex items-center gap-1">‹ Volver</button>
-              <h2 className="text-lg font-semibold text-white mb-4">Creá tu perfil</h2>
+              <button onClick={()=>isAdminMode ? router.push('/') : setStep('choose')} className="text-sm text-gray-500 hover:text-gray-300 mb-5 flex items-center gap-1">‹ Volver</button>
+              <h2 className="text-lg font-semibold text-white mb-4">{isAdminMode ? 'Crear nuevo usuario' : 'Creá tu perfil'}</h2>
 
               {/* Avatar */}
               <div className="flex items-center gap-4 mb-5">

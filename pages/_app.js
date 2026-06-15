@@ -13,17 +13,20 @@ export default function App({ Component, pageProps }) {
   const [usingSystem, setUsingSystem] = useState(true)
 
   useEffect(() => {
-    // Handle auth callback — process hash fragment from OAuth redirect
-    if (window.location.hash && window.location.hash.includes('access_token')) {
+    // Handle implicit flow — exchange hash token for session
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token')) {
+      // Let Supabase process the hash
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          // Clean the URL
+          // Clean URL
           window.history.replaceState({}, document.title, window.location.pathname)
+          window.dispatchEvent(new Event('supabase-auth-ready'))
         }
       })
     }
 
-    // Theme
+    // Theme setup
     const saved = localStorage.getItem('theme')
     if (saved) {
       setTheme(saved); setUsingSystem(false); applyTheme(saved)

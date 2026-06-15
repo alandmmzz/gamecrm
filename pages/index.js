@@ -914,7 +914,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             </div>
 
             {view!=='profile' && isAdmin && adminView && (
-              <button onClick={()=>setModal('newuser')}
+              <button onClick={()=>router.push('/onboarding?admin=1')}
                 className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5">
                 + Usuario
               </button>
@@ -942,7 +942,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-sm">✕</button>}
               </div>
               {(isAdmin && adminView) && (
-                <button onClick={()=>setModal('newuser')}
+                <button onClick={()=>router.push('/onboarding?admin=1')}
                   className="hidden md:flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors flex-shrink-0">
                   + Usuario
                 </button>
