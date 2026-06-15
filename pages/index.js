@@ -329,6 +329,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [expandedDescs, setExpandedDescs] = useState({})
+  const [fabOpen, setFabOpen] = useState(false)
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
 
   // Friend form
@@ -1438,6 +1439,46 @@ export default function Home() {
           </button>
         ))}
       </div>
+
+      {/* FAB — only in profile view */}
+      {view === 'profile' && selectedFriend && (
+        <div className="fixed bottom-24 md:bottom-8 right-6 z-40 flex flex-col items-end gap-2">
+          {fabOpen && (
+            <div className="flex flex-col items-end gap-2 mb-2">
+              <button onClick={()=>{setFabOpen(false);resetGameForm();setModal('game')}}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-white/10 shadow-lg transition-all hover:bg-white/10"
+                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                <span>➕</span> Agregar juego
+              </button>
+              <button onClick={()=>{setFabOpen(false);setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-green-500/20 shadow-lg transition-all hover:bg-green-500/10"
+                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                <span>🎮</span> Importar Steam
+              </button>
+              <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
+                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                <span>⚔️</span> Vincular WoW
+              </button>
+              <button onClick={()=>{setFabOpen(false);refreshCovers()}} disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-blue-500/20 shadow-lg transition-all hover:bg-blue-500/10 disabled:opacity-50"
+                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                <span>🔄</span> {refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar info'}
+              </button>
+              <button onClick={()=>{setFabOpen(false);deleteFriend(selectedFriend.id)}}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-red-400 border border-red-500/20 shadow-lg transition-all hover:bg-red-500/10"
+                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                <span>🗑️</span> Eliminar amigo
+              </button>
+            </div>
+          )}
+          <button onClick={()=>setFabOpen(p=>!p)}
+            className="w-14 h-14 rounded-full flex items-center justify-center text-2xl shadow-lg transition-all"
+            style={{background: fabOpen ? 'rgba(127,119,221,0.9)' : 'rgba(127,119,221,0.8)', backdropFilter:'blur(8px)'}}>
+            {fabOpen ? '✕' : '+'}
+          </button>
+        </div>
+      )}
 
       <Toast message={successToast || refreshProgress} />
     </>
