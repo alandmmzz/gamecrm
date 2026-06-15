@@ -360,6 +360,13 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [gameInfo, setGameInfo] = useState(null)
   const [gameInfoLoading, setGameInfoLoading] = useState(false)
   const [steamId, setSteamId] = useState('')
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [newUserName, setNewUserName] = useState('')
+  const [newUserSteam, setNewUserSteam] = useState('')
+  const [newUserWowChar, setNewUserWowChar] = useState('')
+  const [newUserWowRealm, setNewUserWowRealm] = useState('')
+  const [newUserWowRegion, setNewUserWowRegion] = useState('us')
+  const [newUserSaving, setNewUserSaving] = useState(false)
   const [wowChar, setWowChar] = useState('')
   const [wowRealm, setWowRealm] = useState('')
   const [wowRegion, setWowRegion] = useState('us')
@@ -572,6 +579,70 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     }
     setSteamImporting(false); setSteamProgress(''); setModal(null)
     setSteamId(''); setSteamGames([]); setSelectedSteamGames({})
+  }
+
+  const uploadAvatar = async (file, friendId) => {
+    if (!file || !friendId) return null
+    setAvatarUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${friendId}/avatar.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      // Update friend avatar_url
+      await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: friendId, avatar_url: data.publicUrl + '?t=' + Date.now() })
+      })
+      await fetchFriends()
+      showSuccess('Foto actualizada ✓')
+      return data.publicUrl
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setAvatarUploading(false)
+    }
+    return null
+  }
+
+  const removeAvatar = async (friendId) => {
+    await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: friendId, avatar_url: null })
+    })
+    await fetchFriends()
+    showSuccess('Foto eliminada ✓')
+  }
+
+  const createNewUser = async () => {
+    if (!newUserName.trim()) return
+    setNewUserSaving(true)
+    // Create friend profile
+    const { data: friend } = await fetch('/api/friends', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: newUserName.trim(), username: newUserName.trim().toLowerCase().replace(/\s+/g,'_') })
+    }).then(r => r.json()).then(d => ({data: d})).catch(() => ({data: null}))
+
+    if (friend?.id) {
+      // Import Steam if provided
+      if (newUserSteam.trim()) {
+        const steamRes = await fetch(`/api/steam?steamid=${encodeURIComponent(newUserSteam.trim())}`)
+        const steamData = await steamRes.json()
+        if (steamData.games) {
+          for (const g of steamData.games.slice(0, 50)) {
+            await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ friend_id: friend.id, title: g.title, status: 'playing', pct: 0, hours_played: g.hours_played, cover_url: g.cover_url, last_played_at: g.last_played || null })
+            })
+          }
+        }
+      }
+    }
+
+    await fetchFriends()
+    setNewUserSaving(false)
+    setModal(null)
+    setNewUserName(''); setNewUserSteam(''); setNewUserWowChar(''); setNewUserWowRealm('')
+    showSuccess('Usuario creado ✓')
   }
 
   const fetchWow = async () => {
@@ -834,10 +905,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <span className="font-semibold text-white">Game CRM</span>
             </div>
 
-            {view!=='profile' && (
-              <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
+            {view!=='profile' && isAdmin && adminView && (
+              <button onClick={()=>setModal('newuser')}
                 className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5">
-                + Amigo
+                + Usuario
               </button>
             )}
           </div>
@@ -862,10 +933,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">🔍</span>
                 {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-sm">✕</button>}
               </div>
-              <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
-                className="hidden md:flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors flex-shrink-0">
-                + Amigo
-              </button>
+              {(isAdmin && adminView) && (
+                <button onClick={()=>setModal('newuser')}
+                  className="hidden md:flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors flex-shrink-0">
+                  + Usuario
+                </button>
+              )}
             </div>
           )}
 
@@ -1292,6 +1365,48 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 )}
                 <div className="flex justify-end mt-4">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm" style={{color:'var(--text-secondary)'}}>Cerrar</button>
+                </div>
+              </>
+            )}
+
+            {modal==='newuser' && (
+              <>
+                <h2 className="text-base font-semibold mb-1" style={{color:'var(--text-primary)'}}>➕ Crear usuario</h2>
+                <p className="text-xs mb-5" style={{color:'var(--text-muted)'}}>El usuario podrá vincularse con su cuenta cuando se registre</p>
+
+                <div className="mb-4">
+                  <label className="block text-xs font-medium mb-1" style={{color:'var(--text-muted)'}}>Nombre</label>
+                  <input value={newUserName} onChange={e=>setNewUserName(e.target.value)}
+                    placeholder="ej. Rodrigo" className={inputCls} />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-xs font-medium mb-1" style={{color:'var(--text-muted)'}}>Steam ID <span style={{color:'var(--text-muted)', fontWeight:400}}>(opcional)</span></label>
+                  <input value={newUserSteam} onChange={e=>setNewUserSteam(e.target.value)}
+                    placeholder="URL de perfil o ID numérico" className={inputCls} />
+                  <p className="text-xs mt-1" style={{color:'var(--text-muted)'}}>Se importarán los juegos automáticamente</p>
+                </div>
+
+                <div className="mb-2">
+                  <label className="block text-xs font-medium mb-1" style={{color:'var(--text-muted)'}}>WoW <span style={{color:'var(--text-muted)', fontWeight:400}}>(opcional)</span></label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <input value={newUserWowChar} onChange={e=>setNewUserWowChar(e.target.value)} placeholder="Personaje" className={inputCls} />
+                    <input value={newUserWowRealm} onChange={e=>setNewUserWowRealm(e.target.value)} placeholder="Reino" className={inputCls} />
+                  </div>
+                  <select value={newUserWowRegion} onChange={e=>setNewUserWowRegion(e.target.value)} className={inputCls}>
+                    <option value="us">Americas (US)</option>
+                    <option value="eu">Europa (EU)</option>
+                    <option value="kr">Korea (KR)</option>
+                    <option value="tw">Taiwan (TW)</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-2 justify-end mt-5">
+                  <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm" style={{color:'var(--text-secondary)'}}>Cancelar</button>
+                  <button onClick={createNewUser} disabled={newUserSaving || !newUserName.trim()}
+                    className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
+                    {newUserSaving ? 'Creando...' : 'Crear usuario'}
+                  </button>
                 </div>
               </>
             )}

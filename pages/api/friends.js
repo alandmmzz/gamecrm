@@ -28,7 +28,18 @@ export default async function handler(req, res) {
     return res.status(201).json(data)
   }
 
-  if (req.method === 'DELETE') {
+  if (req.method === 'PATCH') {
+    const { id, avatar_url, name } = req.body
+    if (!id) return res.status(400).json({ error: 'id required' })
+    const patch = {}
+    if (avatar_url !== undefined) patch.avatar_url = avatar_url
+    if (name) patch.name = name
+    const { data, error } = await supabase.from('friends').update(patch).eq('id', id).select().single()
+    if (error) return res.status(500).json({ error: error.message })
+    return res.status(200).json(data)
+  }
+
+
     const { id } = req.query
     if (!id) return res.status(400).json({ error: 'id required' })
     const { error } = await supabase.from('friends').delete().eq('id', id)
