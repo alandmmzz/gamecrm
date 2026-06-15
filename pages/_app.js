@@ -3,20 +3,21 @@ import { useEffect, useState } from 'react'
 
 export default function App({ Component, pageProps }) {
   const [theme, setTheme] = useState('dark')
+  const [usingSystem, setUsingSystem] = useState(true)
 
   useEffect(() => {
-    // Check saved preference, fallback to system
     const saved = localStorage.getItem('theme')
     if (saved) {
       setTheme(saved)
+      setUsingSystem(false)
       document.documentElement.setAttribute('data-theme', saved)
     } else {
+      setUsingSystem(true)
       const system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
       setTheme(system)
       document.documentElement.setAttribute('data-theme', system)
     }
 
-    // Listen for system changes
     const mq = window.matchMedia('(prefers-color-scheme: light)')
     const handler = (e) => {
       if (!localStorage.getItem('theme')) {
@@ -29,19 +30,20 @@ export default function App({ Component, pageProps }) {
     return () => mq.removeEventListener('change', handler)
   }, [])
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('theme', next)
-    document.documentElement.setAttribute('data-theme', next)
+  const setThemeValue = (value) => {
+    if (value === 'system') {
+      localStorage.removeItem('theme')
+      setUsingSystem(true)
+      const system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+      setTheme(system)
+      document.documentElement.setAttribute('data-theme', system)
+    } else {
+      localStorage.setItem('theme', value)
+      setUsingSystem(false)
+      setTheme(value)
+      document.documentElement.setAttribute('data-theme', value)
+    }
   }
 
-  const resetToSystem = () => {
-    localStorage.removeItem('theme')
-    const system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-    setTheme(system)
-    document.documentElement.setAttribute('data-theme', system)
-  }
-
-  return <Component {...pageProps} theme={theme} toggleTheme={toggleTheme} resetToSystem={resetToSystem} />
+  return <Component {...pageProps} theme={theme} usingSystem={usingSystem} setThemeValue={setThemeValue} />
 }

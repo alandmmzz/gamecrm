@@ -321,7 +321,7 @@ function Toast({ message }) {
   )
 }
 
-export default function Home({ theme, toggleTheme, resetToSystem }) {
+export default function Home({ theme, usingSystem, setThemeValue }) {
   const [friends, setFriends] = useState([])
   const [view, setView] = useState('list') // 'list' | 'profile' | 'activity' | 'insights'
   const [search, setSearch] = useState('')
@@ -759,21 +759,11 @@ export default function Home({ theme, toggleTheme, resetToSystem }) {
                 <span>{icon}</span>{label}
               </button>
             ))}
-          </nav>
-          {/* Theme controls */}
-          <div className="px-3 pt-4 border-t mt-4" style={{borderColor:'var(--border)'}}>
-            <div className="text-xs mb-2" style={{color:'var(--text-muted)'}}>Apariencia</div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs" style={{color:'var(--text-secondary)'}}>{theme === 'dark' ? '🌙 Oscuro' : '☀️ Claro'}</span>
-              <button onClick={toggleTheme}
-                className="theme-toggle"
-                style={{background: theme === 'dark' ? 'rgba(127,119,221,0.6)' : 'rgba(127,119,221,0.9)'}}>
-              </button>
-            </div>
-            <button onClick={resetToSystem} className="text-xs transition-colors" style={{color:'var(--text-muted)'}}>
-              Usar configuración del sistema
+            <button onClick={()=>setModal('settings')}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left text-gray-500 hover:text-gray-300 hover:bg-white/5 mt-auto">
+              <span>⚙️</span>Ajustes
             </button>
-          </div>
+          </nav>
         </div>
 
         {/* Main content — offset for fixed sidebar on desktop */}
@@ -1162,6 +1152,40 @@ export default function Home({ theme, toggleTheme, resetToSystem }) {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setModal(null)}>
           <div className="rounded-2xl border border-white/10 p-6 w-full max-w-sm max-h-screen overflow-y-auto" style={{background:"var(--bg-secondary)"}}>
 
+            {modal==='settings' && (
+              <>
+                <h2 className="text-base font-semibold mb-6" style={{color:'var(--text-primary)'}}>⚙️ Ajustes</h2>
+                <div className="mb-6">
+                  <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Apariencia</div>
+                  <div className="space-y-2">
+                    {[
+                      {value:'light', label:'☀️ Claro'},
+                      {value:'dark', label:'🌙 Oscuro'},
+                      {value:'system', label:'💻 Según el sistema'},
+                    ].map(opt => {
+                      const isSelected = opt.value === 'system' ? usingSystem : (!usingSystem && theme === opt.value)
+                      return (
+                        <label key={opt.value} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all"
+                          style={{
+                            borderColor: isSelected ? 'rgba(127,119,221,0.5)' : 'var(--border)',
+                            background: isSelected ? 'rgba(127,119,221,0.08)' : 'transparent'
+                          }}>
+                          <input type="radio" name="theme" value={opt.value}
+                            checked={isSelected}
+                            onChange={()=>setThemeValue(opt.value)}
+                            className="accent-purple-500" />
+                          <span className="text-sm" style={{color:'var(--text-primary)'}}>{opt.label}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm" style={{color:'var(--text-secondary)'}}>Cerrar</button>
+                </div>
+              </>
+            )}
+
             {modal==='friend' && (
               <>
                 <h2 className="text-base font-semibold text-white mb-4">Agregar amigo</h2>
@@ -1463,8 +1487,9 @@ export default function Home({ theme, toggleTheme, resetToSystem }) {
           {t:'activity', icon:'⚡', label:'Actividad'},
           {t:'insights', icon:'✦', label:'Insights'},
           {t:'discover', icon:'🃏', label:'Descubrir'},
+          {t:'settings', icon:'⚙️', label:'Ajustes'},
         ].map(({t,icon,label})=>(
-          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
+          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}if(t==='settings'){setModal('settings');return;}setView(t);setSelected(null)}}
             className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all ${view===t||(view==='profile'&&t==='list')?'text-white':'text-gray-600'}`}>
             <span className="text-lg leading-none">{icon}</span>
             <span>{label}</span>
