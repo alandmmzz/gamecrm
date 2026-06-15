@@ -223,7 +223,7 @@ function InsightsView({ friends }) {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="text-xl font-semibold text-purple-400">{g.players.length}</div>
-                    <div className="text-xs text-gray-600">jugadores</div>
+                    <div className="text-xs" style={{color:'var(--text-muted)'}}>jugadores</div>
                   </div>
                 </div>
               ))}
@@ -289,7 +289,7 @@ function InsightsView({ friends }) {
                   {secondary.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {secondary.map((p, i) => (
-                        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs" style={{background:"var(--bg-tertiary)"}}>
+                        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs" style={{background:"var(--bg-card-hover)"}}>
                           <span className="text-gray-400">{p.a} & {p.b}</span>
                           <span className="text-gray-700">·</span>
                           <span className="text-gray-600">{p.common.join(', ')}</span>
@@ -739,10 +739,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
       </Head>
-      <div className="min-h-screen flex" style={{fontFamily:"Inter,sans-serif", background:"var(--bg-primary)", color:"var(--text-primary)"}}>
+      <div className="min-h-screen flex" style={{fontFamily:"Inter,sans-serif", background:"var(--bg-app)", color:"var(--text-primary)"}}>
 
         {/* Sidebar — desktop only */}
-        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 fixed top-0 left-0 bottom-0 py-6 px-3 z-30" style={{background:"var(--sidebar-bg)"}}>
+        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 fixed top-0 left-0 bottom-0 py-6 px-3 z-30" style={{background:"var(--bg-sidebar)"}}>
           <div className="flex items-center gap-2 px-3 mb-8 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
             <span className="text-xl">🎮</span>
             <span className="font-semibold text-white">Game CRM</span>
@@ -755,12 +755,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               {t:'discover', icon:'🃏', label:'Descubrir'},
             ].map(({t,icon,label})=>(
               <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left ${view===t||(view==='profile'&&t==='list')?'bg-white/10 text-white font-medium':'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}>
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left`}
+                style={{
+                  background: view===t||(view==='profile'&&t==='list') ? 'var(--nav-active-bg)' : 'transparent',
+                  color: view===t||(view==='profile'&&t==='list') ? 'var(--text-nav-active)' : 'var(--text-nav)',
+                  fontWeight: view===t||(view==='profile'&&t==='list') ? 500 : 400,
+                }}>
                 <span>{icon}</span>{label}
               </button>
             ))}
             <button onClick={()=>setModal('settings')}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left text-gray-500 hover:text-gray-300 hover:bg-white/5 mt-auto">
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left mt-auto"
+              style={{color:'var(--text-nav)'}}>
               <span>⚙️</span>Ajustes
             </button>
           </nav>
@@ -788,9 +794,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {/* Stats — only on list/activity/insights */}
           {view!=='profile' && <div className="grid grid-cols-3 gap-3 mb-6">
             {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando'},{num:`${Math.round(totalHours)}h`,label:'Horas'}].map(s=>(
-              <div key={s.label} className="rounded-xl border border-white/5 p-3" style={{background:"var(--bg-tertiary)"}}>
+              <div key={s.label} className="rounded-xl p-3" style={{background:'var(--stat-bg)',border:'1px solid var(--border)'}} style={{background:"var(--bg-card-hover)"}}>
                 <div className="text-xl font-semibold text-white">{s.num}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
+                <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>{s.label}</div>
               </div>
             ))}
           </div>}
@@ -825,15 +831,15 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
                   return (
                     <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile')}}
-                      className="p-4 rounded-xl border border-white/5 cursor-pointer hover:border-white/10 transition-all"
+                      className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
                           {initials(f.name)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white">{f.name}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">
+                          <div className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</div>
+                          <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
                             {(()=>{ const role = getRoleTitle(f.games||[]); return role ? (
                               <span className="flex items-center gap-1"><span>{role.icon}</span><span className="text-purple-400">{role.title}</span></span>
                             ) : <span className="text-gray-600">Sin géneros aún</span> })()}
@@ -841,7 +847,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-sm text-white font-medium">{f.games?.length||0} juego{f.games?.length!==1?'s':''}</div>
-                          <div className="text-xs text-gray-500">{Math.round(totalH)}h</div>
+                          <div className="text-xs" style={{color:'var(--text-muted)'}}>{Math.round(totalH)}h</div>
                         </div>
                         <span className="text-gray-600 text-sm flex-shrink-0">›</span>
                       </div>
@@ -887,7 +893,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm text-gray-500">@{selectedFriend.username}</span>
-                      <span className="text-xs text-gray-500">{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
+                      <span className="text-xs" style={{color:'var(--text-muted)'}}>{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
                     {(()=>{ const role = getRoleTitle(selectedFriend.games||[]); return role ? (
                       <div className="flex items-center gap-1.5 mt-1.5">
@@ -908,10 +914,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Juegos recurrentes</div>
                     <div className="flex flex-wrap gap-2">
                       {recurringGames.map(g=>(
-                        <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-tertiary)"}}>
+                        <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-card-hover)"}}>
                           {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                          <span className="text-sm text-gray-300">{g.title}</span>
-                          <span className="text-xs text-gray-600">{g.hours_played}h</span>
+                          <span className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</span>
+                          <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
                             <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
@@ -940,7 +946,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="font-medium text-white">{g.title}</div>
+                                <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
                                 <div className="flex gap-1 flex-shrink-0">
                                   <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
                                   <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
@@ -951,7 +957,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                               {g.genres?.length>0 && (
                                 <div className="flex flex-wrap gap-1 mb-2">
                                   {g.genres.map(genre=>(
-                                    <span key={genre} className="text-xs px-2 py-0.5 rounded-full border border-white/10 text-gray-500">{genre}</span>
+                                    <span key={genre} className="text-xs px-2 py-0.5 rounded-full" style={{border:'1px solid var(--tag-border)',color:'var(--text-muted)',background:'var(--tag-bg)'}}>{genre}</span>
                                   ))}
                                 </div>
                               )}
@@ -1123,8 +1129,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           : <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${color.bg} ${color.text}`}>{initials(g.friendName)}</div>
                         }
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-gray-300"><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-sm" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
+                          <div className="text-xs" style={{color:'var(--text-muted)'}}>
                             {g.hours_played}h
                             {(()=>{
                               const lp = g.last_played_at||g.started_at
@@ -1150,7 +1156,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       {/* Modals */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setModal(null)}>
-          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-sm max-h-screen overflow-y-auto" style={{background:"var(--bg-secondary)"}}>
+          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-sm max-h-screen overflow-y-auto" style={{background:"var(--bg-modal)"}}>
 
             {modal==='settings' && (
               <>
@@ -1222,7 +1228,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {gameInfo?.cover_url && (
                   <div className="flex items-center gap-2 mb-3">
                     <img src={gameInfo.cover_url} alt="" className="w-8 h-10 rounded object-cover" onError={e=>e.target.style.display='none'} />
-                    <span className="text-xs text-gray-500">Portada encontrada ✓</span>
+                    <span className="text-xs" style={{color:'var(--text-muted)'}}>Portada encontrada ✓</span>
                   </div>
                 )}
                 <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">Estado</label>
@@ -1328,7 +1334,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {steamGames.length > 0 && (
                   <>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-500">{Object.values(selectedSteamGames).filter(Boolean).length} de {steamGames.length} seleccionados</span>
+                      <span className="text-xs" style={{color:'var(--text-muted)'}}>{Object.values(selectedSteamGames).filter(Boolean).length} de {steamGames.length} seleccionados</span>
                       <div className="flex gap-2">
                         <button onClick={()=>{ const s={}; steamGames.forEach(g=>{s[g.appid]=true}); setSelectedSteamGames(s) }} className="text-xs text-gray-500 hover:text-gray-300">Todos</button>
                         <button onClick={()=>setSelectedSteamGames({})} className="text-xs text-gray-500 hover:text-gray-300">Ninguno</button>
@@ -1406,7 +1412,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                       <div className="ml-auto text-right">
                         <div className="text-amber-400 font-semibold">ilvl {wowData.ilvl}</div>
-                        <div className="text-xs text-gray-500">nivel {wowData.level}</div>
+                        <div className="text-xs" style={{color:'var(--text-muted)'}}>nivel {wowData.level}</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3">
@@ -1454,7 +1460,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       {/* Gear modal */}
       {gearOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setGearOpen(false)}>
-          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:"var(--bg-secondary)"}}>
+          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:"var(--bg-modal)"}}>
             <h2 className="text-base font-semibold text-white mb-1">⚙️ {selectedFriend?.name}</h2>
             <p className="text-xs text-gray-500 mb-5">Configuración del perfil</p>
             <div className="space-y-2">
@@ -1463,7 +1469,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <span>🔄</span>
                 <div className="text-left">
                   <div>{refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar información'}</div>
-                  <div className="text-xs text-gray-600">Portadas, géneros y progreso</div>
+                  <div className="text-xs" style={{color:'var(--text-muted)'}}>Portadas, géneros y progreso</div>
                 </div>
               </button>
               <button onClick={()=>{setGearOpen(false);deleteFriend(selectedFriend.id)}}
@@ -1481,7 +1487,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           </div>
         </div>
       )}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bottombar-bg)", backdropFilter:"blur(12px)"}}>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bg-bottombar)", backdropFilter:"blur(12px)"}}>
         {[
           {t:'list', icon:'👥', label:'Amigos'},
           {t:'activity', icon:'⚡', label:'Actividad'},

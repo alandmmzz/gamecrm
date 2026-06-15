@@ -2,63 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode (default) */
 :root {
-  --bg-primary: #0f0f13;
-  --bg-secondary: #1a1a24;
-  --bg-tertiary: rgba(255,255,255,0.03);
+  --bg-app: #0f0f13;
   --bg-card: rgba(255,255,255,0.02);
+  --bg-card-hover: rgba(255,255,255,0.04);
+  --bg-modal: #1a1a24;
+  --bg-sidebar: rgba(15,15,19,0.98);
+  --bg-bottombar: rgba(15,15,19,0.95);
+  --bg-input: rgba(255,255,255,0.05);
   --border: rgba(255,255,255,0.08);
-  --border-strong: rgba(255,255,255,0.15);
+  --border-input: rgba(255,255,255,0.1);
   --text-primary: #e8e8f0;
   --text-secondary: #9999b0;
-  --text-muted: #555570;
-  --sidebar-bg: rgba(15,15,19,0.98);
-  --bottombar-bg: rgba(15,15,19,0.95);
+  --text-muted: #55556a;
+  --text-nav-active: #ffffff;
+  --text-nav: #6b6b85;
+  --nav-active-bg: rgba(255,255,255,0.1);
+  --stat-bg: rgba(255,255,255,0.03);
+  --tag-bg: rgba(255,255,255,0.06);
+  --tag-border: rgba(255,255,255,0.1);
 }
 
-[data-theme="light"] {
-  --bg-primary: #f4f4f8;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: rgba(0,0,0,0.03);
-  --bg-card: rgba(0,0,0,0.02);
+/* Light mode */
+.dark\:hidden ~ *,
+html:not(.dark) {
+  --bg-app: #f0f0f5;
+  --bg-card: rgba(255,255,255,0.8);
+  --bg-card-hover: rgba(255,255,255,0.95);
+  --bg-modal: #ffffff;
+  --bg-sidebar: rgba(240,240,245,0.98);
+  --bg-bottombar: rgba(240,240,245,0.95);
+  --bg-input: rgba(0,0,0,0.04);
   --border: rgba(0,0,0,0.08);
-  --border-strong: rgba(0,0,0,0.15);
+  --border-input: rgba(0,0,0,0.12);
   --text-primary: #1a1a2e;
-  --text-secondary: #555570;
-  --text-muted: #9999b0;
-  --sidebar-bg: rgba(244,244,248,0.98);
-  --bottombar-bg: rgba(244,244,248,0.95);
+  --text-secondary: #4a4a6a;
+  --text-muted: #8888a0;
+  --text-nav-active: #1a1a2e;
+  --text-nav: #7777a0;
+  --nav-active-bg: rgba(0,0,0,0.07);
+  --stat-bg: rgba(255,255,255,0.7);
+  --tag-bg: rgba(0,0,0,0.05);
+  --tag-border: rgba(0,0,0,0.1);
+}
+
+html:not(.dark) {
+  --bg-app: #f0f0f5;
+  --bg-card: rgba(255,255,255,0.8);
+  --bg-card-hover: rgba(255,255,255,0.95);
+  --bg-modal: #ffffff;
+  --bg-sidebar: rgba(240,240,245,0.98);
+  --bg-bottombar: rgba(240,240,245,0.95);
+  --bg-input: rgba(0,0,0,0.04);
+  --border: rgba(0,0,0,0.08);
+  --border-input: rgba(0,0,0,0.12);
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-muted: #8888a0;
+  --text-nav-active: #1a1a2e;
+  --text-nav: #7777a0;
+  --nav-active-bg: rgba(0,0,0,0.07);
+  --stat-bg: rgba(255,255,255,0.7);
+  --tag-bg: rgba(0,0,0,0.05);
+  --tag-border: rgba(0,0,0,0.1);
 }
 
 body {
-  background: var(--bg-primary);
+  background: var(--bg-app);
   color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   transition: background 0.2s, color 0.2s;
-}
-
-/* Theme toggle button */
-.theme-toggle {
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.theme-toggle::after {
-  content: '';
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  top: 3px;
-  left: 3px;
-  background: white;
-  transition: transform 0.2s;
-}
-
-[data-theme="light"] .theme-toggle::after {
-  transform: translateX(16px);
 }

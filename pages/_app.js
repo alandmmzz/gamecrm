@@ -1,6 +1,12 @@
 import '../styles/globals.css'
 import { useEffect, useState } from 'react'
 
+function applyTheme(value) {
+  const isDark = value === 'dark'
+  document.documentElement.classList.toggle('dark', isDark)
+  document.documentElement.setAttribute('data-theme', value)
+}
+
 export default function App({ Component, pageProps }) {
   const [theme, setTheme] = useState('dark')
   const [usingSystem, setUsingSystem] = useState(true)
@@ -10,12 +16,12 @@ export default function App({ Component, pageProps }) {
     if (saved) {
       setTheme(saved)
       setUsingSystem(false)
-      document.documentElement.setAttribute('data-theme', saved)
+      applyTheme(saved)
     } else {
       setUsingSystem(true)
       const system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
       setTheme(system)
-      document.documentElement.setAttribute('data-theme', system)
+      applyTheme(system)
     }
 
     const mq = window.matchMedia('(prefers-color-scheme: light)')
@@ -23,7 +29,7 @@ export default function App({ Component, pageProps }) {
       if (!localStorage.getItem('theme')) {
         const t = e.matches ? 'light' : 'dark'
         setTheme(t)
-        document.documentElement.setAttribute('data-theme', t)
+        applyTheme(t)
       }
     }
     mq.addEventListener('change', handler)
@@ -36,12 +42,12 @@ export default function App({ Component, pageProps }) {
       setUsingSystem(true)
       const system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
       setTheme(system)
-      document.documentElement.setAttribute('data-theme', system)
+      applyTheme(system)
     } else {
       localStorage.setItem('theme', value)
       setUsingSystem(false)
       setTheme(value)
-      document.documentElement.setAttribute('data-theme', value)
+      applyTheme(value)
     }
   }
 
