@@ -866,18 +866,14 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     // Generate role title
     if (f) {
       setRefreshProgress('Generando rol...')
-      console.log('updatedGenres:', updatedGenres)
       const top3 = Object.entries(updatedGenres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
-      console.log('top3:', top3)
       if (top3.length) {
         try {
           const r = await fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ genres: top3 }) })
           const d = await r.json()
-          console.log('role response:', d)
           if (d.title) {
             const res = await fetch('/api/friends', { method:'PATCH', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ id: f.id, role_title: d.title }) })
-            console.log('api update:', res.status)
           }
         } catch (e) { console.error('role error', e) }
       }
@@ -1125,10 +1121,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     )}
                   </div>
                   {canEdit(selectedFriend?.id) && (
-                    <button onClick={refreshCovers} disabled={refreshing} title="Actualizar información"
-                      className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
-                      <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-                    </button>
+                    <div className="flex gap-2">
+                      <button onClick={refreshCovers} disabled={refreshing} title="Actualizar información"
+                        className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
+                        <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                      </button>
+                      {isAdmin && adminView && !isOwner(selectedFriend?.id) && (
+                        <button onClick={()=>deleteFriend(selectedFriend.id)} title="Eliminar usuario"
+                          className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
