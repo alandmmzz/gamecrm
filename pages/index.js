@@ -778,7 +778,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             <span className="text-xl">🎮</span>
             <span className="font-semibold text-white">Game CRM</span>
           </div>
-          <nav className="flex flex-col gap-1 flex-1">
+          <nav className="flex flex-col gap-1">
             {[
               {t:'list', icon:'👥', label:'Amigos'},
               {t:'activity', icon:'⚡', label:'Actividad'},
@@ -795,15 +795,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <span>{icon}</span>{label}
               </button>
             ))}
-            <button onClick={()=>setModal('settings')}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left"
-              style={{color:'var(--text-nav)'}}>
-              <span>⚙️</span>Ajustes
-            </button>
+          </nav>
+
           {/* User section at bottom */}
-          <div className="px-3 pt-3 border-t mt-3" style={{borderColor:'var(--border)'}}>
+          <div className="mt-auto pt-4 border-t" style={{borderColor:'var(--border)'}}>
             {session ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-1">
                 {session.user.user_metadata?.avatar_url
                   ? <img src={session.user.user_metadata.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0" />
                   : <div className="w-7 h-7 rounded-full bg-purple-900/40 flex items-center justify-center text-xs text-purple-300 flex-shrink-0">{(myProfile?.name||'?')[0]}</div>
@@ -811,7 +808,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                 </div>
-                <button onClick={()=>signOut()} className="text-xs px-2 py-1 rounded-lg transition-all" style={{color:'var(--text-muted)'}} title="Cerrar sesión">↩</button>
+                <button onClick={()=>setModal('settings')} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes">⚙️</button>
               </div>
             ) : (
               <button onClick={()=>router.push('/login')}
@@ -821,7 +818,6 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               </button>
             )}
           </div>
-          </nav>
         </div>
 
         {/* Main content — offset for fixed sidebar on desktop */}
@@ -1570,14 +1566,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {t:'activity', icon:'⚡', label:'Actividad'},
           {t:'insights', icon:'✦', label:'Insights'},
           {t:'discover', icon:'🃏', label:'Descubrir'},
-          {t:'settings', icon:'⚙️', label:'Ajustes'},
         ].map(({t,icon,label})=>(
-          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}if(t==='settings'){setModal('settings');return;}setView(t);setSelected(null)}}
+          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
             className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all ${view===t||(view==='profile'&&t==='list')?'text-white':'text-gray-600'}`}>
             <span className="text-lg leading-none">{icon}</span>
             <span>{label}</span>
           </button>
         ))}
+        <button onClick={()=>setModal('settings')}
+          className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all text-gray-600`}>
+          <span className="text-lg leading-none">⚙️</span>
+          <span>Ajustes</span>
+        </button>
       </div>
 
       {/* FAB — only in profile view and only for owner */}
