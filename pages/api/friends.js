@@ -40,6 +40,7 @@ export default async function handler(req, res) {
   }
 
 
+  if (req.method === 'DELETE') {
     const { id } = req.query
     if (!id) return res.status(400).json({ error: 'id required' })
     const { error } = await supabase.from('friends').delete().eq('id', id)
