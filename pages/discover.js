@@ -44,7 +44,7 @@ function GameCard({ game, onLike, onSkip }) {
       onTouchEnd={handleEnd}>
 
       {/* Card */}
-      <div className="w-full h-full rounded-2xl overflow-hidden border border-white/10 relative" style={{background:'#1a1a24'}}>
+      <div className="w-full h-full rounded-2xl overflow-hidden border border-white/10 relative" style={{background:"var(--bg-secondary)"}}>
         {/* Cover image */}
         {game.cover_url
           ? <img src={game.cover_url} alt={game.title} className="w-full h-48 object-cover" onError={e=>e.target.style.display='none'} />

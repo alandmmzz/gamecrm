@@ -207,7 +207,7 @@ function InsightsView({ friends }) {
           ? <div className="text-sm text-gray-600">No hay juegos en común aún.</div>
           : <div className="space-y-2">
               {sharedGames.map(g => (
-                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:'rgba(255,255,255,0.02)'}}>
+                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:"var(--bg-card)"}}>
                   {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-10 h-14 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-white text-sm mb-1">{g.title}</div>
@@ -238,7 +238,7 @@ function InsightsView({ friends }) {
           ? <div className="text-sm text-gray-600">No hay datos suficientes aún.</div>
           : <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {topPlayers.map(g => (
-                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:'rgba(255,255,255,0.02)'}}>
+                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:"var(--bg-card)"}}>
                   {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-gray-400 truncate">{g.title}</div>
@@ -289,7 +289,7 @@ function InsightsView({ friends }) {
                   {secondary.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {secondary.map((p, i) => (
-                        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs" style={{background:'rgba(255,255,255,0.03)'}}>
+                        <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs" style={{background:"var(--bg-tertiary)"}}>
                           <span className="text-gray-400">{p.a} & {p.b}</span>
                           <span className="text-gray-700">·</span>
                           <span className="text-gray-600">{p.common.join(', ')}</span>
@@ -311,7 +311,7 @@ function Toast({ message }) {
   if (!message) return null
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm text-white shadow-lg flex items-center gap-2 transition-all"
-      style={{background:'rgba(30,30,40,0.95)', border:'0.5px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', maxWidth:'90vw'}}>
+      style={{background:"var(--bg-secondary)", border:'0.5px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', maxWidth:'90vw'}}>
       {message.includes('✓') || message.includes('Listo') || message.includes('guardado') || message.includes('actualizado') || message.includes('agregado')
         ? <span className="text-teal-400 flex-shrink-0">✓</span>
         : <div className="w-3 h-3 border-2 border-white/20 border-t-purple-400 rounded-full animate-spin flex-shrink-0"></div>
@@ -321,7 +321,7 @@ function Toast({ message }) {
   )
 }
 
-export default function Home() {
+export default function Home({ theme, toggleTheme, resetToSystem }) {
   const [friends, setFriends] = useState([])
   const [view, setView] = useState('list') // 'list' | 'profile' | 'activity' | 'insights'
   const [search, setSearch] = useState('')
@@ -739,10 +739,10 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
       </Head>
-      <div className="min-h-screen flex" style={{fontFamily:'Inter,sans-serif'}}>
+      <div className="min-h-screen flex" style={{fontFamily:"Inter,sans-serif", background:"var(--bg-primary)", color:"var(--text-primary)"}}>
 
         {/* Sidebar — desktop only */}
-        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 fixed top-0 left-0 bottom-0 py-6 px-3 z-30" style={{background:'rgba(15,15,19,0.98)'}}>
+        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 fixed top-0 left-0 bottom-0 py-6 px-3 z-30" style={{background:"var(--sidebar-bg)"}}>
           <div className="flex items-center gap-2 px-3 mb-8 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
             <span className="text-xl">🎮</span>
             <span className="font-semibold text-white">Game CRM</span>
@@ -760,6 +760,20 @@ export default function Home() {
               </button>
             ))}
           </nav>
+          {/* Theme controls */}
+          <div className="px-3 pt-4 border-t mt-4" style={{borderColor:'var(--border)'}}>
+            <div className="text-xs mb-2" style={{color:'var(--text-muted)'}}>Apariencia</div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs" style={{color:'var(--text-secondary)'}}>{theme === 'dark' ? '🌙 Oscuro' : '☀️ Claro'}</span>
+              <button onClick={toggleTheme}
+                className="theme-toggle"
+                style={{background: theme === 'dark' ? 'rgba(127,119,221,0.6)' : 'rgba(127,119,221,0.9)'}}>
+              </button>
+            </div>
+            <button onClick={resetToSystem} className="text-xs transition-colors" style={{color:'var(--text-muted)'}}>
+              Usar configuración del sistema
+            </button>
+          </div>
         </div>
 
         {/* Main content — offset for fixed sidebar on desktop */}
@@ -784,7 +798,7 @@ export default function Home() {
           {/* Stats — only on list/activity/insights */}
           {view!=='profile' && <div className="grid grid-cols-3 gap-3 mb-6">
             {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando'},{num:`${Math.round(totalHours)}h`,label:'Horas'}].map(s=>(
-              <div key={s.label} className="rounded-xl border border-white/5 p-3" style={{background:'rgba(255,255,255,0.03)'}}>
+              <div key={s.label} className="rounded-xl border border-white/5 p-3" style={{background:"var(--bg-tertiary)"}}>
                 <div className="text-xl font-semibold text-white">{s.num}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
               </div>
@@ -822,7 +836,7 @@ export default function Home() {
                   return (
                     <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile')}}
                       className="p-4 rounded-xl border border-white/5 cursor-pointer hover:border-white/10 transition-all"
-                      style={{background:'rgba(255,255,255,0.02)'}}>
+                      style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
                           {initials(f.name)}
@@ -904,7 +918,7 @@ export default function Home() {
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Juegos recurrentes</div>
                     <div className="flex flex-wrap gap-2">
                       {recurringGames.map(g=>(
-                        <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:'rgba(255,255,255,0.03)'}}>
+                        <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-tertiary)"}}>
                           {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                           <span className="text-sm text-gray-300">{g.title}</span>
                           <span className="text-xs text-gray-600">{g.hours_played}h</span>
@@ -931,7 +945,7 @@ export default function Home() {
                     </div>
                     <div className="space-y-3 mb-8">
                       {activeGames.map(g=>(
-                        <div key={g.id} className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
+                        <div key={g.id} className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
                           <div className="flex gap-3">
                             {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                             <div className="flex-1 min-w-0">
@@ -993,7 +1007,7 @@ export default function Home() {
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Historial</div>
                     <div className="space-y-2">
                       {history.map(g=>(
-                        <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:'rgba(255,255,255,0.02)'}}>
+                        <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
                           {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -1035,7 +1049,7 @@ export default function Home() {
 
                 {/* Chart sidebar — desktop only */}
                 <div className="hidden md:block w-64 flex-shrink-0 sticky top-8">
-                  <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
+                  <div className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
                     <GenreRadarChart games={selectedFriend?.games||[]} />
                     <div className="mt-5 pt-4 border-t border-white/5">
@@ -1068,7 +1082,7 @@ export default function Home() {
 
               {/* Chart mobile — below games */}
               <div className="md:hidden mt-6">
-                <div className="rounded-xl border border-white/5 p-4" style={{background:'rgba(255,255,255,0.02)'}}>
+                <div className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
                   <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
                   <GenreRadarChart games={selectedFriend?.games||[]} />
                     <div className="mt-5 pt-4 border-t border-white/5">
@@ -1113,7 +1127,7 @@ export default function Home() {
                 : allGames.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(g=>{
                     const color = COLOR_MAP[COLORS[g.friendIdx%COLORS.length]]
                     return (
-                      <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:'rgba(255,255,255,0.02)'}}>
+                      <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
                         {g.cover_url
                           ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
                           : <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${color.bg} ${color.text}`}>{initials(g.friendName)}</div>
@@ -1146,7 +1160,7 @@ export default function Home() {
       {/* Modals */}
       {modal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setModal(null)}>
-          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-sm max-h-screen overflow-y-auto" style={{background:'#1a1a24'}}>
+          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-sm max-h-screen overflow-y-auto" style={{background:"var(--bg-secondary)"}}>
 
             {modal==='friend' && (
               <>
@@ -1416,7 +1430,7 @@ export default function Home() {
       {/* Gear modal */}
       {gearOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setGearOpen(false)}>
-          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:'#1a1a24'}}>
+          <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:"var(--bg-secondary)"}}>
             <h2 className="text-base font-semibold text-white mb-1">⚙️ {selectedFriend?.name}</h2>
             <p className="text-xs text-gray-500 mb-5">Configuración del perfil</p>
             <div className="space-y-2">
@@ -1443,7 +1457,7 @@ export default function Home() {
           </div>
         </div>
       )}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:'rgba(15,15,19,0.95)', backdropFilter:'blur(12px)'}}>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bottombar-bg)", backdropFilter:"blur(12px)"}}>
         {[
           {t:'list', icon:'👥', label:'Amigos'},
           {t:'activity', icon:'⚡', label:'Actividad'},
