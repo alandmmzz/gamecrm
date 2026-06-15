@@ -338,6 +338,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [expandedDescs, setExpandedDescs] = useState({})
   const [fabOpen, setFabOpen] = useState(false)
   const [gearOpen, setGearOpen] = useState(false)
+  const [generatedRole, setGeneratedRole] = useState(null)
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
 
   // Friend form
@@ -881,7 +882,6 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const canEdit = (friendId) => (isAdmin && adminView) || isOwner(friendId)
   const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
-  const [generatedRole, setGeneratedRole] = useState(null)
   const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.last_played_at||b.started_at||0) - new Date(a.last_played_at||a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
   const activeGames = allActive.filter(g => !g.no_progress)
   const recurringGames = allActive.filter(g => g.no_progress)
