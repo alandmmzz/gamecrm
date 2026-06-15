@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, GitMerge, Medal, ChevronRight, Gamepad2, Sword, Sun, Moon, Monitor, Crown, UserCheck, Steam, Swords, PlusCircle, Wand2, RotateCw } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, GitMerge, Medal, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -1052,7 +1052,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         {selectedFriend.steam_id && (
-                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}>🎮 Steam</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}><Gamepad2 size={11} /> Steam</span>
                         )}
                         {selectedFriend.wow_character && (
                           <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', color:'rgb(245,158,11)'}}>⚔️ {selectedFriend.wow_character}</span>
@@ -1090,7 +1090,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             {canEdit(selectedFriend?.id) && <>
-                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs">✏️</button>
+                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400"><Pencil size={13} /></button>
                               <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
                             </>}
                           </div>
@@ -1121,8 +1121,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                 <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
                                 <div className="flex gap-1 flex-shrink-0">
                                   {canEdit(selectedFriend?.id) && <>
-                                    <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 text-xs px-1.5 py-0.5 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors">✨</button>
-                                    <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-white/10 transition-colors">✏️</button>
+                                    <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 p-1 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors"><Sparkles size={12} /></button>
+                                    <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5 hover:border-white/10 transition-colors"><Pencil size={12} /></button>
                                     <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
                                   </>}
                                 </div>
@@ -1204,7 +1204,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             {canEdit(selectedFriend?.id) && <>
-                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✏️</button>
+                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5"><Pencil size={12} /></button>
                               <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
                             </>}
                           </div>
@@ -1548,7 +1548,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             {modal==='estimate' && editGame && (
               <>
-                <h2 className="text-base font-semibold text-white mb-1">✨ Estimar con IA</h2>
+                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><Sparkles size={16} /> Estimar con IA</h2>
                 <p className="text-xs text-gray-500 mb-4">{editGame.title}</p>
                 <div className="mb-3"><label className="block text-xs text-gray-500 mb-1">¿Dónde estás en el juego?</label>
                   <textarea value={estimateDesc} onChange={e=>setEstimateDesc(e.target.value)}
@@ -1578,7 +1578,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             {modal==='steam' && (
               <>
-                <h2 className="text-base font-semibold text-white mb-1">🎮 Importar desde Steam</h2>
+                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><Gamepad2 size={16} /> Importar desde Steam</h2>
                 <p className="text-xs text-gray-500 mb-3">Para {selectedFriend?.name} · El perfil de Steam debe ser público</p>
                 <div className="rounded-lg px-3 py-2 mb-4 text-xs text-teal-300 border border-teal-500/20" style={{background:'rgba(93,202,165,0.07)'}}>
                   Los juegos ya cargados solo actualizarán sus horas jugadas — el estado y progreso no se tocan.
@@ -1639,7 +1639,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             {modal==='wow' && (
               <>
-                <h2 className="text-base font-semibold text-white mb-1">⚔️ Conectar WoW</h2>
+                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><Trophy size={16} /> Conectar WoW</h2>
                 <p className="text-xs text-gray-500 mb-4">Para {selectedFriend?.name}</p>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div>
@@ -1788,7 +1788,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
                 style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
-                <Swords size={15} /> Vincular WoW
+                <Gamepad2 size={15} /> Vincular WoW
               </button>
 
             </div>
