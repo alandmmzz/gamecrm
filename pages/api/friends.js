@@ -54,6 +54,8 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const { id } = req.query
     if (!id) return res.status(400).json({ error: 'id required' })
+    // Delete games first
+    await supabase.from('games').delete().eq('friend_id', id)
     const { error } = await supabase.from('friends').delete().eq('id', id)
     if (error) return res.status(500).json({ error: error.message })
     return res.status(200).json({ ok: true })
