@@ -1151,6 +1151,7 @@ export default function Home() {
 
         </div>
       </div>
+      </div>
 
       {/* Modals */}
       {modal && (
@@ -1421,10 +1422,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-        </div>
-        </div>
-      </div>
 
       {/* Bottom bar — mobile only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:'rgba(15,15,19,0.95)', backdropFilter:'blur(12px)'}}>
