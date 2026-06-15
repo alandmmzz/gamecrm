@@ -740,7 +740,7 @@ export default function Home() {
       <div className="min-h-screen flex" style={{fontFamily:'Inter,sans-serif'}}>
 
         {/* Sidebar — desktop only */}
-        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 min-h-screen py-6 px-3" style={{background:'rgba(255,255,255,0.01)'}}>
+        <div className="hidden md:flex flex-col w-56 flex-shrink-0 border-r border-white/5 fixed top-0 left-0 bottom-0 py-6 px-3 z-30" style={{background:'rgba(15,15,19,0.98)'}}>
           <div className="flex items-center gap-2 px-3 mb-8 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
             <span className="text-xl">🎮</span>
             <span className="font-semibold text-white">Game CRM</span>
@@ -758,16 +758,10 @@ export default function Home() {
               </button>
             ))}
           </nav>
-          {view!=='profile' && (
-            <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all">
-              + Amigo
-            </button>
-          )}
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 min-w-0 pb-20 md:pb-0">
+        {/* Main content — offset for fixed sidebar on desktop */}
+        <div className="flex-1 min-w-0 pb-20 md:pb-0 md:ml-56">
         <div className="max-w-3xl mx-auto px-4 py-6">
 
           {/* Mobile header */}
@@ -801,12 +795,18 @@ export default function Home() {
 
           {/* Search bar — only on friends list */}
           {view==='list' && (
-            <div className="relative mb-4">
-              <input value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Buscar amigo..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 pl-9" />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">🔍</span>
-              {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-sm">✕</button>}
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <input value={search} onChange={e=>setSearch(e.target.value)}
+                  placeholder="Buscar amigo..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 pl-9" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">🔍</span>
+                {search && <button onClick={()=>setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 text-sm">✕</button>}
+              </div>
+              <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
+                className="hidden md:flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-colors flex-shrink-0">
+                + Amigo
+              </button>
             </div>
           )}
 
