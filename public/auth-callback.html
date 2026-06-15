@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Autenticando...</title></head>
+<body>
+<script>
+  // This static HTML file reads the hash BEFORE Next.js strips it
+  var hash = window.location.hash;
+  if (hash && hash.includes('access_token')) {
+    // Store the hash in sessionStorage so Next.js can read it
+    sessionStorage.setItem('supabase-auth-hash', hash);
+    window.location.replace('/auth/callback');
+  } else {
+    window.location.replace('/login');
+  }
+</script>
+<p style="font-family:sans-serif;text-align:center;margin-top:40px;color:#888">Autenticando...</p>
+</body>
+</html>
