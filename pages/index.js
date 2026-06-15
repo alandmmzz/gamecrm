@@ -1079,9 +1079,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     ) : null })()}
                   </div>
                   {canEdit(selectedFriend?.id) && (
-                    <button onClick={()=>setGearOpen(true)} title="Configuración"
-                      className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all">
-                      <Settings size={16} />
+                    <button onClick={refreshCovers} disabled={refreshing} title="Actualizar información"
+                      className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
+                      <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                     </button>
                   )}
                 </div>

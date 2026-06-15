@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { Sun, Moon, Monitor, Crown, User, LogOut, ChevronLeft, Settings } from 'lucide-react'
+import { Sun, Moon, Monitor, Crown, User, LogOut, ChevronLeft, Settings, Trash2, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Camera } from 'lucide-react'
 import { signOut } from '../lib/auth'
 
 export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
@@ -10,6 +11,48 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
   const [session, setSession] = useState(null)
   const [myProfile, setMyProfile] = useState(null)
   const [adminView, setAdminView] = useState(true)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const saveName = async () => {
+    if (!nameValue.trim() || !myProfile?.id) return
+    setNameSaving(true)
+    await supabase.from('friends').update({ name: nameValue.trim() }).eq('id', myProfile.id)
+    setMyProfile(p => ({...p, name: nameValue.trim()}))
+    setEditingName(false)
+    setNameSaving(false)
+  }
+
+  const deleteProfile = async () => {
+    if (!myProfile?.id) return
+    setDeleting(true)
+    // Delete all games first
+    await supabase.from('games').delete().eq('friend_id', myProfile.id)
+    // Delete friend
+    await supabase.from('friends').delete().eq('id', myProfile.id)
+    // Sign out
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  const uploadAvatar = async (file) => {
+    if (!file || !myProfile?.id) return
+    setAvatarUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${myProfile.id}/avatar.${ext}`
+      await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      const url = data.publicUrl + '?t=' + Date.now()
+      await supabase.from('friends').update({ avatar_url: url }).eq('id', myProfile.id)
+      setMyProfile(p => ({...p, avatar_url: url}))
+    } catch (e) { console.error(e) }
+    setAvatarUploading(false)
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -76,14 +119,48 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
           {session && (
             <Section title="Cuenta">
               <div className="flex items-center gap-3 px-4 py-3.5" style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)'}}>
-                {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
-                  ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                  : <div className="w-10 h-10 rounded-full bg-purple-900/40 flex items-center justify-center text-purple-300 flex-shrink-0">{(myProfile?.name||'?')[0]}</div>
-                }
+                <label className="cursor-pointer flex-shrink-0 relative group">
+                  {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
+                    ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-12 h-12 rounded-full object-cover" />
+                    : <div className="w-12 h-12 rounded-full bg-purple-900/40 flex items-center justify-center text-purple-300">{(myProfile?.name||'?')[0]}</div>
+                  }
+                  <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <Camera size={14} className="text-white" />
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" disabled={avatarUploading}
+                    onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])} />
+                </label>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                   <div className="text-xs" style={{color:'var(--text-muted)'}}>{session.user.email}</div>
+                  <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>{avatarUploading ? 'Subiendo...' : 'Tocá la foto para cambiarla'}</div>
                 </div>
+              </div>
+              {/* Edit name */}
+              <div className="px-4 py-3.5" style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)'}}>
+                {editingName ? (
+                  <div className="flex gap-2">
+                    <input autoFocus value={nameValue} onChange={e=>setNameValue(e.target.value)}
+                      onKeyDown={e=>e.key==='Enter'&&saveName()}
+                      className="flex-1 rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+                      style={{background:'var(--bg-input)',border:'1px solid var(--border-input)',color:'var(--text-primary)'}} />
+                    <button onClick={saveName} disabled={nameSaving} className="px-3 py-1.5 rounded-lg text-sm text-white" style={{background:'rgba(127,119,221,0.8)'}}>
+                      {nameSaving ? '...' : 'Guardar'}
+                    </button>
+                    <button onClick={()=>setEditingName(false)} className="px-3 py-1.5 rounded-lg text-sm" style={{color:'var(--text-muted)'}}>Cancelar</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs" style={{color:'var(--text-muted)'}}>Nombre</div>
+                      <div className="text-sm" style={{color:'var(--text-primary)'}}>{myProfile?.name}</div>
+                    </div>
+                    <button onClick={()=>{setNameValue(myProfile?.name||'');setEditingName(true)}}
+                      className="text-xs px-3 py-1.5 rounded-lg transition-all" style={{color:'var(--text-muted)',border:'1px solid var(--border)'}}>
+                      Editar
+                    </button>
+                  </div>
+                )}
               </div>
               <Row icon={LogOut} label="Cerrar sesión" danger onClick={()=>{signOut();router.push('/login')}} />
             </Section>
@@ -149,7 +226,37 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
             </Section>
           )}
 
-          <div className="text-center text-xs mt-8" style={{color:'var(--text-muted)'}}>Game CRM · Hecho con ♥</div>
+          {/* Delete profile */}
+          {session && myProfile && (
+            <div className="mt-8 mb-4">
+              {showDeleteConfirm ? (
+                <div className="rounded-2xl p-4" style={{border:'1px solid rgba(239,68,68,0.3)', background:'rgba(239,68,68,0.05)'}}>
+                  <div className="text-sm font-medium mb-1" style={{color:'rgb(239,68,68)'}}>¿Eliminar tu perfil?</div>
+                  <div className="text-xs mb-4" style={{color:'var(--text-muted)'}}>Se van a borrar todos tus juegos permanentemente. Esta acción no se puede deshacer.</div>
+                  <div className="flex gap-2">
+                    <button onClick={deleteProfile} disabled={deleting}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white disabled:opacity-50"
+                      style={{background:'rgb(239,68,68)'}}>
+                      {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                    </button>
+                    <button onClick={()=>setShowDeleteConfirm(false)}
+                      className="flex-1 py-2.5 rounded-xl text-sm"
+                      style={{color:'var(--text-secondary)',border:'1px solid var(--border)'}}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={()=>setShowDeleteConfirm(true)}
+                  className="w-full py-3 rounded-2xl text-sm transition-all"
+                  style={{color:'rgb(239,68,68)', border:'1px solid rgba(239,68,68,0.2)', background:'transparent'}}>
+                  Eliminar mi perfil
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="text-center text-xs mt-4" style={{color:'var(--text-muted)'}}>Game CRM · Hecho con ♥</div>
         </div>
       </div>
     </>
