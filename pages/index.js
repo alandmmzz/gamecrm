@@ -390,6 +390,32 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [estimating, setEstimating] = useState(false)
   const [estimateResult, setEstimateResult] = useState(null)
 
+  const generateRoleTitle = async (friend) => {
+    if (!friend?.id || friend.role_title) return friend?.role_title || null
+    const games = friend.games || []
+    const genreMap = {}
+    games.forEach(g => (g.genres||[]).forEach(genre => {
+      genreMap[genre] = (genreMap[genre]||0) + (g.hours_played||0)
+    }))
+    const top3 = Object.entries(genreMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
+    if (!top3.length) return null
+
+    try {
+      const r = await fetch('/api/role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ genres: top3 })
+      })
+      const d = await r.json()
+      const title = d.title
+      if (title) {
+        await supabase.from('friends').update({ role_title: title }).eq('id', friend.id)
+        return title
+      }
+    } catch {}
+    return null
+  }
+
   const fetchFriends = async () => {
     const r = await fetch('/api/friends')
     const data = await r.json()
@@ -397,6 +423,15 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     setLoading(false)
   }
   useEffect(() => { fetchFriends() }, [])
+
+  useEffect(() => {
+    if (!selectedFriend) return
+    if (selectedFriend.role_title) { setGeneratedRole(selectedFriend.role_title); return }
+    setGeneratedRole(null)
+    generateRoleTitle(selectedFriend).then(title => {
+      if (title) setGeneratedRole(title)
+    })
+  }, [selectedFriend?.id])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -846,6 +881,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const canEdit = (friendId) => (isAdmin && adminView) || isOwner(friendId)
   const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
+  const [generatedRole, setGeneratedRole] = useState(null)
   const allActive = (selectedFriend?.games?.filter(g => g.status==='playing')||[]).sort((a,b)=> sortOrder==='alpha' ? a.title.localeCompare(b.title) : sortOrder==='date' ? new Date(b.last_played_at||b.started_at||0) - new Date(a.last_played_at||a.started_at||0) : (b.hours_played||0)-(a.hours_played||0))
   const activeGames = allActive.filter(g => !g.no_progress)
   const recurringGames = allActive.filter(g => g.no_progress)
@@ -1006,9 +1042,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-900/40 text-purple-300">yo</span>}</div>
                           <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
-                            {(()=>{ const role = getRoleTitle(f.games||[]); return role ? (
-                              <span className="flex items-center gap-1"><Trophy size={12} className="text-purple-400" /><span className="text-purple-400">{role.title}</span></span>
-                            ) : <span className="text-gray-600">Sin géneros aún</span> })()}
+                            {(()=>{ const role = f.role_title || getRoleTitle(f.games||[])?.title; return role ? (
+                              <span className="flex items-center gap-1"><Trophy size={12} className="text-purple-400" /><span className="text-purple-400">{role}</span></span>
+                            ) : <span style={{color:'var(--text-muted)'}}>Sin géneros aún</span> })()}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -1071,12 +1107,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                       <span className="text-xs" style={{color:'var(--text-muted)'}}>{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
                     </div>
-                    {(()=>{ const role = getRoleTitle(selectedFriend.games||[]); return role ? (
+                    {(generatedRole || selectedFriend.role_title) && (
                       <div className="flex items-center gap-1.5 mt-1.5">
                         <Trophy size={13} className="text-purple-400" />
-                        <span className="text-xs font-medium text-purple-400">{role.title}</span>
+                        <span className="text-xs font-medium text-purple-400">{generatedRole || selectedFriend.role_title}</span>
                       </div>
-                    ) : null })()}
+                    )}
                   </div>
                   {canEdit(selectedFriend?.id) && (
                     <button onClick={refreshCovers} disabled={refreshing} title="Actualizar información"
@@ -1228,7 +1264,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 </div>{/* end main col */}
 
                 {/* Chart sidebar — desktop only */}
-                <div className="hidden md:block w-64 flex-shrink-0 sticky top-8" style={{maxHeight:'calc(100vh - 80px)', overflowY:'auto', scrollbarWidth:'none'}}>
+                <div className="hidden md:block w-64 flex-shrink-0 sticky top-8" style={{maxHeight:'calc(100vh - 64px)', overflowY:'auto', scrollbarWidth:'none'}}>
                   <div className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
                     <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
                     <GenreRadarChart games={selectedFriend?.games||[]} />
