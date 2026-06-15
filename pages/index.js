@@ -339,6 +339,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [fabOpen, setFabOpen] = useState(false)
   const [gearOpen, setGearOpen] = useState(false)
   const [generatedRole, setGeneratedRole] = useState(null)
+  const [adminView, setAdminView] = useState(true)
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
 
   // Friend form
@@ -424,6 +425,14 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     setLoading(false)
   }
   useEffect(() => { fetchFriends() }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('adminView')
+    if (saved !== null) setAdminView(saved === 'true')
+    const handler = (e) => { if (e.key === 'adminView') setAdminView(e.newValue === 'true') }
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
 
   useEffect(() => {
     if (!selectedFriend) return
@@ -870,15 +879,6 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
   const isOwner = (friendId) => myProfile?.id === friendId
   const isAdmin = myProfile?.is_admin === true
-  const [adminView, setAdminView] = useState(true)
-  // Sync adminView from settings page
-  useEffect(() => {
-    const saved = localStorage.getItem('adminView')
-    if (saved !== null) setAdminView(saved === 'true')
-    const handler = (e) => { if (e.key === 'adminView') setAdminView(e.newValue === 'true') }
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
-  }, [])
   const canEdit = (friendId) => (isAdmin && adminView) || isOwner(friendId)
   const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
