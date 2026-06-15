@@ -30,7 +30,6 @@ export default function Login({ theme, usingSystem, setThemeValue }) {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        skipBrowserRedirect: false,
       }
     })
     if (error) { console.error(error); setLoading(false) }
