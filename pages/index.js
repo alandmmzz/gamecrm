@@ -835,6 +835,14 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const isOwner = (friendId) => myProfile?.id === friendId
   const isAdmin = myProfile?.is_admin === true
   const [adminView, setAdminView] = useState(true)
+  // Sync adminView from settings page
+  useEffect(() => {
+    const saved = localStorage.getItem('adminView')
+    if (saved !== null) setAdminView(saved === 'true')
+    const handler = (e) => { if (e.key === 'adminView') setAdminView(e.newValue === 'true') }
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
   const canEdit = (friendId) => (isAdmin && adminView) || isOwner(friendId)
   const filteredFriends = friends.filter(f => !search || f.name.toLowerCase().includes(search.toLowerCase()))
   const selectedFriend = friends.find(f => f.id === selected)
@@ -903,7 +911,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate group-hover:opacity-80 transition-opacity" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                 </div>
-                <button onClick={e=>{e.stopPropagation();setModal('settings')}} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes"><Settings size={15} /></button>
+                <button onClick={e=>{e.stopPropagation();router.push('/settings')}} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all flex-shrink-0" style={{color:'var(--text-muted)'}} title="Ajustes"><Settings size={15} /></button>
               </div>
             ) : (
               <button onClick={()=>router.push('/login')}
@@ -1765,7 +1773,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             <span>{label}</span>
           </button>
         ))}
-        <button onClick={()=>setModal('settings')}
+        <button onClick={()=>router.push('/settings')}
           className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all text-gray-600`}>
           <Settings size={20} />
           <span>Ajustes</span>
