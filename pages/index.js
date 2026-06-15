@@ -330,6 +330,7 @@ export default function Home() {
   const [modal, setModal] = useState(null)
   const [expandedDescs, setExpandedDescs] = useState({})
   const [fabOpen, setFabOpen] = useState(false)
+  const [gearOpen, setGearOpen] = useState(false)
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
 
   // Friend form
@@ -771,11 +772,7 @@ export default function Home() {
               <span className="text-xl">🎮</span>
               <span className="font-semibold text-white">Game CRM</span>
             </div>
-            {view==='profile' && selected && (
-              <div className="flex gap-2">
-                <button onClick={()=>{resetGameForm();setModal('game')}} className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5">+ Juego</button>
-              </div>
-            )}
+
             {view!=='profile' && (
               <button onClick={()=>{setFName('');setFUser('');setFStatus('offline');setModal('friend')}}
                 className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-gray-300 hover:bg-white/5">
@@ -895,6 +892,10 @@ export default function Home() {
                       </div>
                     ) : null })()}
                   </div>
+                  <button onClick={()=>setGearOpen(true)} title="Configuración"
+                    className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all text-base">
+                    ⚙️
+                  </button>
                 </div>
 
                 {/* Recurring games badges */}
@@ -1329,6 +1330,36 @@ export default function Home() {
               </>
             )}
 
+            {gearOpen && (
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e=>e.target===e.currentTarget&&setGearOpen(false)}>
+                <div className="rounded-2xl border border-white/10 p-6 w-full max-w-xs" style={{background:'#1a1a24'}}>
+                  <h2 className="text-base font-semibold text-white mb-1">⚙️ {selectedFriend?.name}</h2>
+                  <p className="text-xs text-gray-500 mb-5">Configuración del perfil</p>
+                  <div className="space-y-2">
+                    <button onClick={()=>{setGearOpen(false);refreshCovers()}} disabled={refreshing}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/10 text-sm text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
+                      <span>🔄</span>
+                      <div className="text-left">
+                        <div>{refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar información'}</div>
+                        <div className="text-xs text-gray-600">Portadas, géneros y progreso</div>
+                      </div>
+                    </button>
+                    <button onClick={()=>{setGearOpen(false);deleteFriend(selectedFriend.id)}}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-500/20 text-sm text-red-400 hover:bg-red-500/10 transition-all">
+                      <span>🗑️</span>
+                      <div className="text-left">
+                        <div>Eliminar amigo</div>
+                        <div className="text-xs text-red-600">Esto elimina todos sus juegos</div>
+                      </div>
+                    </button>
+                  </div>
+                  <div className="flex justify-end mt-4">
+                    <button onClick={()=>setGearOpen(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cerrar</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {modal==='wow' && (
               <>
                 <h2 className="text-base font-semibold text-white mb-1">⚔️ Conectar WoW</h2>
@@ -1448,16 +1479,7 @@ export default function Home() {
                 style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
                 <span>⚔️</span> Vincular WoW
               </button>
-              <button onClick={()=>{setFabOpen(false);refreshCovers()}} disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-blue-500/20 shadow-lg transition-all hover:bg-blue-500/10 disabled:opacity-50"
-                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
-                <span>🔄</span> {refreshing ? refreshProgress || 'Actualizando...' : 'Actualizar info'}
-              </button>
-              <button onClick={()=>{setFabOpen(false);deleteFriend(selectedFriend.id)}}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-red-400 border border-red-500/20 shadow-lg transition-all hover:bg-red-500/10"
-                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
-                <span>🗑️</span> Eliminar amigo
-              </button>
+
             </div>
           )}
           <button onClick={()=>setFabOpen(p=>!p)}
