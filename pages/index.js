@@ -863,8 +863,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       } catch {}
     }
 
-    // Generate role title if missing
-    if (f && !f.role_title) {
+    // Generate role title
+    if (f) {
       setRefreshProgress('Generando rol...')
       const top3 = Object.entries(updatedGenres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
       if (top3.length) {
@@ -872,7 +872,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           const r = await fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ genres: top3 }) })
           const d = await r.json()
           if (d.title) await supabase.from('friends').update({ role_title: d.title }).eq('id', f.id)
-        } catch {}
+        } catch (e) { console.error('role error', e) }
       }
     }
 
