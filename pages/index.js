@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, GitMerge, Medal, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -1346,6 +1346,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       {value:'system', Icon:Monitor, label:'Según el sistema'},
                     ].map(opt => {
                       const isSelected = opt.value === 'system' ? usingSystem : (!usingSystem && theme === opt.value)
+                      const IconComp = opt.Icon
                       return (
                         <label key={opt.value} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all"
                           style={{
@@ -1356,7 +1357,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             checked={isSelected}
                             onChange={()=>setThemeValue(opt.value)}
                             className="accent-purple-500" />
-                          <span className="text-sm" style={{color:'var(--text-primary)'}}>{opt.label}</span>
+                          <span className="text-sm flex items-center gap-2" style={{color:'var(--text-primary)'}}><IconComp size={14} />{opt.label}</span>
                         </label>
                       )
                     })}
@@ -1367,10 +1368,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Admin</div>
                     <div className="space-y-2">
                       {[
-                        {value:true, label:'👑 Vista admin', desc:'Podés editar cualquier perfil'},
-                        {value:false, label:'👤 Vista normal', desc:'Ves la app como tus amigos'},
+                        {value:true, Icon:Crown, label:'Vista admin', desc:'Podés editar cualquier perfil'},
+                        {value:false, Icon:User, label:'Vista normal', desc:'Ves la app como tus amigos'},
                       ].map(opt => {
                         const isSelected = adminView === opt.value
+                        const IconComp = opt.Icon
                         return (
                           <label key={String(opt.value)} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all"
                             style={{
@@ -1380,7 +1382,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             <input type="radio" name="adminView" checked={isSelected}
                               onChange={()=>setAdminView(opt.value)} className="accent-purple-500" />
                             <div>
-                              <div className="text-sm flex items-center gap-2" style={{color:'var(--text-primary)'}}><opt.Icon size={14} />{opt.label}</div>
+                              <div className="text-sm flex items-center gap-2" style={{color:'var(--text-primary)'}}><IconComp size={14} />{opt.label}</div>
                               <div className="text-xs" style={{color:'var(--text-muted)'}}>{opt.desc}</div>
                             </div>
                           </label>
