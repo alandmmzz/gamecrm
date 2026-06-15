@@ -351,6 +351,13 @@ export default function Home() {
   const [gameInfo, setGameInfo] = useState(null)
   const [gameInfoLoading, setGameInfoLoading] = useState(false)
   const [steamId, setSteamId] = useState('')
+  const [wowChar, setWowChar] = useState('')
+  const [wowRealm, setWowRealm] = useState('')
+  const [wowRegion, setWowRegion] = useState('us')
+  const [wowData, setWowData] = useState(null)
+  const [wowLoading, setWowLoading] = useState(false)
+  const [wowError, setWowError] = useState('')
+  const [wowSaving, setWowSaving] = useState(false)
   const [steamGames, setSteamGames] = useState([])
   const [steamLoading, setSteamLoading] = useState(false)
   const [steamError, setSteamError] = useState('')
@@ -532,6 +539,43 @@ export default function Home() {
     }
     setSteamImporting(false); setSteamProgress(''); setModal(null)
     setSteamId(''); setSteamGames([]); setSelectedSteamGames({})
+  }
+
+  const fetchWow = async () => {
+    if (!wowChar.trim() || !wowRealm.trim()) return
+    setWowLoading(true); setWowError(''); setWowData(null)
+    try {
+      const r = await fetch(`/api/wow?character=${encodeURIComponent(wowChar.trim())}&realm=${encodeURIComponent(wowRealm.trim())}&region=${wowRegion}`)
+      const data = await r.json()
+      if (data.error) { setWowError(data.error); setWowLoading(false); return }
+      setWowData(data)
+    } catch (e) { setWowError(e.message) }
+    setWowLoading(false)
+  }
+
+  const saveWow = async () => {
+    if (!wowData || !selected) return
+    setWowSaving(true)
+    // Save WoW as a special game entry
+    const existing = selectedFriend?.games?.find(g => g.title === 'World of Warcraft')
+    const wowTitle = `WoW: ${wowData.name} (${wowData.realm})`
+    if (existing) {
+      await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: existing.id, hours_played: existing.hours_played, pct: existing.pct }) })
+    } else {
+      await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          friend_id: selected, title: wowTitle,
+          status: 'playing', pct: 0, hours_played: 0,
+          cover_url: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2835570/header.jpg',
+          description: `${wowData.spec} ${wowData.class} | ilvl ${wowData.ilvl} | ${wowData.faction}`,
+          no_progress: true,
+        })
+      })
+    }
+    await fetchFriends()
+    setWowSaving(false); setModal(null); setWowData(null); setWowChar(''); setWowRealm('')
+    showSuccess('Personaje de WoW guardado ✓')
   }
 
   const deleteFriend = async (id) => {
@@ -813,6 +857,8 @@ export default function Home() {
                   <div className="flex gap-2">
                     <button onClick={()=>{setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                       className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-green-500/30 hover:bg-green-500/10 transition-colors">🎮 Steam</button>
+                    <button onClick={()=>{setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
+                      className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-amber-500/30 hover:bg-amber-500/10 transition-colors">⚔️ WoW</button>
                     <button onClick={()=>{resetGameForm();setModal('game')}}
                       className="text-gray-300 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors">+ Juego</button>
                     <button onClick={refreshCovers} disabled={refreshing} title="Actualizar portadas"
@@ -1250,6 +1296,85 @@ export default function Home() {
                     <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
                   </div>
                 )}
+              </>
+            )}
+
+            {modal==='wow' && (
+              <>
+                <h2 className="text-base font-semibold text-white mb-1">⚔️ Conectar WoW</h2>
+                <p className="text-xs text-gray-500 mb-4">Para {selectedFriend?.name}</p>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Personaje</label>
+                    <input value={wowChar} onChange={e=>setWowChar(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchWow()} placeholder="Thrall" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Reino</label>
+                    <input value={wowRealm} onChange={e=>setWowRealm(e.target.value)} onKeyDown={e=>e.key==='Enter'&&fetchWow()} placeholder="Ragnaros" className={inputCls} />
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-500 mb-1">Región</label>
+                  <select value={wowRegion} onChange={e=>setWowRegion(e.target.value)} className={inputCls}>
+                    <option value="us">Americas (US)</option>
+                    <option value="eu">Europa (EU)</option>
+                    <option value="kr">Korea (KR)</option>
+                    <option value="tw">Taiwan (TW)</option>
+                  </select>
+                </div>
+                <button onClick={fetchWow} disabled={wowLoading||!wowChar.trim()||!wowRealm.trim()}
+                  className="w-full py-2 text-sm bg-amber-600/80 hover:bg-amber-500/80 disabled:opacity-50 text-white rounded-lg mb-3 transition-colors">
+                  {wowLoading ? 'Buscando...' : 'Buscar personaje'}
+                </button>
+                {wowError && <div className="text-xs text-red-400 mb-3">{wowError}</div>}
+                {wowData && (
+                  <div className="rounded-xl border border-amber-500/20 p-4 mb-4" style={{background:'rgba(245,158,11,0.05)'}}>
+                    <div className="flex items-center gap-3 mb-3">
+                      {wowData.avatar && <img src={wowData.avatar} alt={wowData.name} className="w-12 h-12 rounded-lg object-cover" />}
+                      <div>
+                        <div className="font-semibold text-white">{wowData.name}</div>
+                        <div className="text-xs text-gray-400">{wowData.realm} · {wowData.region}</div>
+                      </div>
+                      <div className="ml-auto text-right">
+                        <div className="text-amber-400 font-semibold">ilvl {wowData.ilvl}</div>
+                        <div className="text-xs text-gray-500">nivel {wowData.level}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3">
+                      {[
+                        ['Clase', wowData.class],
+                        ['Spec', wowData.spec],
+                        ['Raza', wowData.race],
+                        ['Facción', wowData.faction],
+                        ['Logros', wowData.achievement_points?.toLocaleString()],
+                      ].filter(([,v])=>v).map(([l,v]) => (
+                        <div key={l} className="flex justify-between">
+                          <span className="text-gray-500">{l}</span>
+                          <span className="text-gray-300">{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {wowData.raid_progress?.length > 0 && (
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1.5">Progreso de raids</div>
+                        <div className="space-y-1">
+                          {wowData.raid_progress.map(r => (
+                            <div key={r.name} className="flex justify-between text-xs">
+                              <span className="text-gray-400 truncate">{r.name}</span>
+                              <span className="text-amber-400 flex-shrink-0 ml-2">{r.progress} <span className="text-gray-600">{r.difficulty}</span></span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
+                  {wowData && <button onClick={saveWow} disabled={wowSaving} className="px-4 py-2 text-sm bg-amber-600/80 hover:bg-amber-500/80 disabled:opacity-50 text-white rounded-lg">
+                    {wowSaving ? 'Guardando...' : 'Guardar personaje'}
+                  </button>}
+                </div>
               </>
             )}
 
