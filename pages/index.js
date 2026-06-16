@@ -1042,11 +1042,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 avatar-initials">
                           {initials(f.name)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-900/40 text-purple-300">yo</span>}</div>
+                          <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{background:'rgba(127,119,221,0.2)',color:'rgb(80,70,180)'}}>yo</span>}</div>
                           <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
                             {(()=>{ const role = f.role_title || getRoleTitle(f.games||[])?.title; return role ? (
                               <span className="flex items-center gap-1"><Trophy size={12} className="text-purple-400" /><span className="text-purple-400">{role}</span></span>
@@ -1360,7 +1360,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
                         {g.cover_url
                           ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                          : <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${color.bg} ${color.text}`}>{initials(g.friendName)}</div>
+                          : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(g.friendName)}</div>
                         }
                         <div className="flex-1 min-w-0">
                           <div className="text-sm" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
