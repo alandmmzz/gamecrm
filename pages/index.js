@@ -198,7 +198,7 @@ function InsightsView({ friends }) {
   }
   similarPairs.sort((a,b) => b.score - a.score)
 
-  const gameBadge = (s) => s==='playing'?'bg-purple-900/60 text-purple-200':s==='completed'?'bg-teal-900/60 text-teal-200':'bg-red-900/40 text-red-300'
+  const gameBadge = (s) => s==='playing'?'game-badge-playing':s==='completed'?'game-badge-completed':'game-badge-dropped'
   const gameLabel = (s) => s==='playing'?'Jugando':s==='completed'?'Completado':'Abandonado'
 
   return (
@@ -283,7 +283,7 @@ function InsightsView({ friends }) {
                           </div>
                           <div className="flex gap-1.5 flex-wrap">
                             {p.common.map(g => (
-                              <span key={g} className="text-xs px-2.5 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-200">{g}</span>
+                              <span key={g} className="text-xs px-2.5 py-1 rounded-full" style={{background:'rgba(236,72,153,0.12)', border:'1px solid rgba(236,72,153,0.3)', color:'rgb(180,40,100)'}}>{g}</span>
                             ))}
                           </div>
                         </div>
@@ -902,7 +902,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
   const statusDot = (s) => s==='online'?'bg-green-400':s==='away'?'bg-amber-400':'bg-gray-500'
   const statusLabel = (s) => s==='online'?'Online':s==='away'?'Ausente':'Offline'
-  const gameBadge = (s) => s==='playing'?'bg-purple-900/60 text-purple-200':s==='completed'?'bg-teal-900/60 text-teal-200':'bg-red-900/40 text-red-300'
+  const gameBadge = (s) => s==='playing'?'game-badge-playing':s==='completed'?'game-badge-completed':'game-badge-dropped'
   const gameLabel = (s) => s==='playing'?'Jugando':s==='completed'?'Completado':'Abandonado'
   const progressColor = (p) => p<33?'bg-teal-500':p<66?'bg-amber-500':'bg-purple-500'
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CL') : null
@@ -1837,17 +1837,17 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             <div className="flex flex-col items-end gap-2 mb-2">
               <button onClick={()=>{setFabOpen(false);resetGameForm();setModal('game')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-white/10 shadow-lg transition-all hover:bg-white/10"
-                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
                 <Plus size={15} /> Agregar juego
               </button>
               <button onClick={()=>{setFabOpen(false);setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-green-500/20 shadow-lg transition-all hover:bg-green-500/10"
-                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
                 <Gamepad2 size={15} /> Importar Steam
               </button>
               <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
-                style={{background:'rgba(20,20,30,0.95)', backdropFilter:'blur(8px)'}}>
+                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
                 <Gamepad2 size={15} /> Vincular WoW
               </button>
 

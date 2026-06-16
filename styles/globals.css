@@ -122,3 +122,38 @@ html:not(.dark) [style*="rgba(255,255,255,0.03)"],
 html:not(.dark) [style*="rgba(255,255,255,0.04)"] {
   background: var(--bg-card) !important;
 }
+
+/* Game status badges */
+.game-badge-playing {
+  background: rgba(127,119,221,0.15);
+  color: rgb(127,119,221);
+  border: 1px solid rgba(127,119,221,0.3);
+}
+.game-badge-completed {
+  background: rgba(20,184,166,0.12);
+  color: rgb(15,150,130);
+  border: 1px solid rgba(20,184,166,0.25);
+}
+.game-badge-dropped {
+  background: rgba(239,68,68,0.1);
+  color: rgb(200,50,50);
+  border: 1px solid rgba(239,68,68,0.2);
+}
+
+html.dark .game-badge-playing {
+  background: rgba(127,119,221,0.25);
+  color: rgb(196,192,255);
+}
+html.dark .game-badge-completed {
+  background: rgba(20,184,166,0.2);
+  color: rgb(94,234,212);
+}
+html.dark .game-badge-dropped {
+  background: rgba(239,68,68,0.15);
+  color: rgb(252,165,165);
+}
+
+/* Progress bars bg */
+html:not(.dark) .bg-white\/5 {
+  background-color: rgba(0,0,0,0.06) !important;
+}
