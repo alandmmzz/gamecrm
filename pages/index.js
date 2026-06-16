@@ -87,11 +87,11 @@ function GenreRadarChart({ games }) {
     <div>
       <svg viewBox="0 0 220 220" className="w-full max-w-xs mx-auto">
         {[0.25,0.5,0.75,1].map(f => (
-          <polygon key={f} points={gridPoints(f)} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+          <polygon key={f} points={gridPoints(f)} fill="none" stroke="var(--border)" strokeWidth="1" />
         ))}
         {entries.map((_,i) => {
           const angle = (i / n) * 2 * Math.PI - Math.PI / 2
-          return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+          return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(angle)} y2={cy + r * Math.sin(angle)} stroke="var(--border)" strokeWidth="1" />
         })}
         <polygon points={polyPoints} fill="rgba(127,119,221,0.2)" stroke="#7F77DD" strokeWidth="1.5" />
         {points.map((p,i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill="#7F77DD" />)}
@@ -101,7 +101,7 @@ function GenreRadarChart({ games }) {
           const ly = cy + (r + 18) * Math.sin(angle)
           const anchor = lx < cx - 5 ? 'end' : lx > cx + 5 ? 'start' : 'middle'
           return (
-            <text key={i} x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" fontSize="8" fill="rgba(255,255,255,0.5)">
+            <text key={i} x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle" fontSize="8" fill="var(--text-muted)">
               {name.length > 12 ? name.slice(0,11)+'…' : name}
             </text>
           )
@@ -116,7 +116,7 @@ function GenreRadarChart({ games }) {
                 <span className="text-gray-400 truncate">{name}</span>
                 <span className="text-gray-500 flex-shrink-0 ml-2">{Math.round(val)}h</span>
               </div>
-              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+              <div className="h-1 rounded-full overflow-hidden" style={{background:'var(--border)'}}>
                 <div className="h-full rounded-full transition-all" style={{width:`${(val/max)*100}%`,background:GENRE_COLORS[i%GENRE_COLORS.length]}}></div>
               </div>
             </div>
@@ -1855,8 +1855,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           )}
           <button onClick={()=>setFabOpen(p=>!p)}
             className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all"
-            style={{background: fabOpen ? 'rgba(127,119,221,0.9)' : 'rgba(127,119,221,0.8)', backdropFilter:'blur(8px)'}}>
-            <Plus size={24} className="text-white transition-transform duration-300" style={{transform: fabOpen ? 'rotate(45deg)' : 'rotate(0deg)'}} />
+            style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
+            <Plus size={24} className="transition-transform duration-300" style={{color:'rgb(127,119,221)', transform: fabOpen ? 'rotate(45deg)' : 'rotate(0deg)'}} />
           </button>
         </div>
       )}
