@@ -948,7 +948,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile')}}}>
                 {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
                   ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
-                  : <div className="w-7 h-7 rounded-full bg-purple-900/40 flex items-center justify-center text-xs text-purple-300 flex-shrink-0">{(myProfile?.name||'?')[0]}</div>
+                  : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0 avatar-initials">{(myProfile?.name||'?')[0]}</div>
                 }
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate group-hover:opacity-80 transition-opacity" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
@@ -1508,7 +1508,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 <div className="flex gap-2 justify-end mt-5">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm" style={{color:'var(--text-secondary)'}}>Cancelar</button>
                   <button onClick={createNewUser} disabled={newUserSaving || !newUserName.trim()}
-                    className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
+                    className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg" style={{color:'white'}}>
                     {newUserSaving ? 'Creando...' : 'Crear usuario'}
                   </button>
                 </div>
@@ -1523,7 +1523,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
-                  <button onClick={addFriend} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Agregar'}</button>
+                  <button onClick={addFriend} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg" style={{color:'white'}}>{saving?'Guardando...':'Agregar'}</button>
                 </div>
               </>
             )}
@@ -1573,7 +1573,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 </label>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
-                  <button onClick={addGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Guardar'}</button>
+                  <button onClick={addGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg" style={{color:'white'}}>{saving?'Guardando...':'Guardar'}</button>
                 </div>
               </>
             )}
@@ -1601,7 +1601,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 </label>
                 <div className="flex gap-2 justify-end">
                   <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
-                  <button onClick={updateGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">{saving?'Guardando...':'Actualizar'}</button>
+                  <button onClick={updateGame} disabled={saving} className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg" style={{color:'white'}}>{saving?'Guardando...':'Actualizar'}</button>
                 </div>
               </>
             )}
@@ -1683,7 +1683,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <div className="flex gap-2 justify-end">
                       <button onClick={()=>setModal(null)} className="px-4 py-2 text-sm text-gray-400 hover:text-gray-200">Cancelar</button>
                       <button onClick={importSteamGames} disabled={steamImporting||!Object.values(selectedSteamGames).some(Boolean)}
-                        className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg">
+                        className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg" style={{color:'white'}}>
                         {steamImporting ? steamProgress||'Importando...' : `Importar ${Object.values(selectedSteamGames).filter(Boolean).length} juegos`}
                       </button>
                     </div>
