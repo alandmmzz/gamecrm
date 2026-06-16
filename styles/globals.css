@@ -160,10 +160,11 @@ html:not(.dark) .bg-white\/5 {
 
 /* Avatar initials */
 .avatar-initials {
-  background: rgba(127,119,221,0.15);
-  color: rgb(100,90,200);
+  background: rgba(127,119,221,0.25);
+  color: rgb(80,70,180);
+  font-weight: 600;
 }
 html.dark .avatar-initials {
-  background: rgba(127,119,221,0.25);
-  color: rgb(196,192,255);
+  background: rgba(127,119,221,0.3);
+  color: rgb(210,206,255);
 }
