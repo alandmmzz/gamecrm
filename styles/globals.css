@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode (default) */
 :root {
   --bg-app: #0f0f13;
   --bg-card: rgba(255,255,255,0.02);
@@ -11,6 +10,7 @@
   --bg-sidebar: rgba(15,15,19,0.98);
   --bg-bottombar: rgba(15,15,19,0.95);
   --bg-input: rgba(255,255,255,0.05);
+  --bg-tertiary: rgba(255,255,255,0.03);
   --border: rgba(255,255,255,0.08);
   --border-input: rgba(255,255,255,0.1);
   --text-primary: #e8e8f0;
@@ -24,46 +24,24 @@
   --tag-border: rgba(255,255,255,0.1);
 }
 
-/* Light mode */
-.dark\:hidden ~ *,
 html:not(.dark) {
   --bg-app: #f0f0f5;
-  --bg-card: rgba(255,255,255,0.8);
-  --bg-card-hover: rgba(255,255,255,0.95);
+  --bg-card: rgba(255,255,255,0.9);
+  --bg-card-hover: #ffffff;
   --bg-modal: #ffffff;
-  --bg-sidebar: rgba(240,240,245,0.98);
-  --bg-bottombar: rgba(240,240,245,0.95);
-  --bg-input: rgba(0,0,0,0.04);
+  --bg-sidebar: rgba(243,243,248,0.98);
+  --bg-bottombar: rgba(243,243,248,0.95);
+  --bg-input: rgba(0,0,0,0.05);
+  --bg-tertiary: rgba(0,0,0,0.03);
   --border: rgba(0,0,0,0.08);
   --border-input: rgba(0,0,0,0.12);
-  --text-primary: #1a1a2e;
+  --text-primary: #18182a;
   --text-secondary: #4a4a6a;
-  --text-muted: #8888a0;
-  --text-nav-active: #1a1a2e;
-  --text-nav: #7777a0;
-  --nav-active-bg: rgba(0,0,0,0.07);
-  --stat-bg: rgba(255,255,255,0.7);
-  --tag-bg: rgba(0,0,0,0.05);
-  --tag-border: rgba(0,0,0,0.1);
-}
-
-html:not(.dark) {
-  --bg-app: #f0f0f5;
-  --bg-card: rgba(255,255,255,0.8);
-  --bg-card-hover: rgba(255,255,255,0.95);
-  --bg-modal: #ffffff;
-  --bg-sidebar: rgba(240,240,245,0.98);
-  --bg-bottombar: rgba(240,240,245,0.95);
-  --bg-input: rgba(0,0,0,0.04);
-  --border: rgba(0,0,0,0.08);
-  --border-input: rgba(0,0,0,0.12);
-  --text-primary: #1a1a2e;
-  --text-secondary: #4a4a6a;
-  --text-muted: #8888a0;
-  --text-nav-active: #1a1a2e;
-  --text-nav: #7777a0;
-  --nav-active-bg: rgba(0,0,0,0.07);
-  --stat-bg: rgba(255,255,255,0.7);
+  --text-muted: #7777a0;
+  --text-nav-active: #18182a;
+  --text-nav: #8888b0;
+  --nav-active-bg: rgba(0,0,0,0.06);
+  --stat-bg: rgba(255,255,255,0.8);
   --tag-bg: rgba(0,0,0,0.05);
   --tag-border: rgba(0,0,0,0.1);
 }
@@ -73,4 +51,74 @@ body {
   color: var(--text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   transition: background 0.2s, color 0.2s;
+}
+
+/* Force text colors in light mode */
+html:not(.dark) .text-white,
+html:not(.dark) .text-gray-100,
+html:not(.dark) .text-gray-200 {
+  color: var(--text-primary) !important;
+}
+
+html:not(.dark) .text-gray-300,
+html:not(.dark) .text-gray-400 {
+  color: var(--text-secondary) !important;
+}
+
+html:not(.dark) .text-gray-500,
+html:not(.dark) .text-gray-600 {
+  color: var(--text-muted) !important;
+}
+
+/* Fix borders in light mode */
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/\[0\.08\] {
+  border-color: var(--border) !important;
+}
+
+/* Fix backgrounds in light mode */
+html:not(.dark) .bg-white\/5 {
+  background-color: rgba(0,0,0,0.04) !important;
+}
+
+html:not(.dark) .bg-white\/10 {
+  background-color: rgba(0,0,0,0.07) !important;
+}
+
+html:not(.dark) .bg-purple-900\/30 {
+  background-color: rgba(127,119,221,0.12) !important;
+}
+
+html:not(.dark) .bg-purple-900\/40 {
+  background-color: rgba(127,119,221,0.15) !important;
+}
+
+html:not(.dark) .text-purple-300 {
+  color: rgba(100,90,200,0.9) !important;
+}
+
+html:not(.dark) .text-purple-400 {
+  color: rgb(90,80,190) !important;
+}
+
+html:not(.dark) .text-teal-400,
+html:not(.dark) .text-teal-500 {
+  color: rgb(0,130,110) !important;
+}
+
+html:not(.dark) .text-amber-400,
+html:not(.dark) .text-amber-500 {
+  color: rgb(160,110,0) !important;
+}
+
+html:not(.dark) .text-red-400 {
+  color: rgb(200,40,40) !important;
+}
+
+/* Game card backgrounds */
+html:not(.dark) [style*="rgba(255,255,255,0.02)"],
+html:not(.dark) [style*="rgba(255,255,255,0.03)"],
+html:not(.dark) [style*="rgba(255,255,255,0.04)"] {
+  background: var(--bg-card) !important;
 }

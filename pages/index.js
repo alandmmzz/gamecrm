@@ -206,13 +206,12 @@ function InsightsView({ friends }) {
 
       {/* Juegos en común */}
       <div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Gamepad2 size={13} /> Juegos en común</div>
+        <div className="text-xs font-medium uppercase tracking-wider mb-3 flex items-center gap-1.5"><Gamepad2 size={13} /> Juegos en común</div>
         {sharedGames.length === 0
           ? <div className="text-sm text-gray-600">No hay juegos en común aún.</div>
           : <div className="space-y-2">
               {sharedGames.map(g => (
-                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:"var(--bg-card)"}}>
-                  {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-10 h-14 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                <div key={g.title} className="rounded-xl p-3 flex gap-3 items-center" style={{background:"var(--bg-card)", border:'1px solid var(--border)'}}> onError={e=>e.target.style.display='none'} />}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-white text-sm mb-1">{g.title}</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -237,13 +236,12 @@ function InsightsView({ friends }) {
 
       {/* El más dedicado */}
       <div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Trophy size={13} /> El más dedicado</div>
+        <div className="text-xs font-medium uppercase tracking-wider mb-3 flex items-center gap-1.5"><Trophy size={13} /> El más dedicado</div>
         {topPlayers.length === 0
           ? <div className="text-sm text-gray-600">No hay datos suficientes aún.</div>
           : <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {topPlayers.map(g => (
-                <div key={g.title} className="rounded-xl border border-white/5 p-3 flex gap-3 items-center" style={{background:"var(--bg-card)"}}>
-                  {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                <div key={g.title} className="rounded-xl p-3 flex gap-3 items-center" style={{background:"var(--bg-card)", border:'1px solid var(--border)'}}> onError={e=>e.target.style.display='none'} />}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-gray-400 truncate">{g.title}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -251,7 +249,7 @@ function InsightsView({ friends }) {
                       <span className="text-purple-400 text-xs font-medium">{g.leader.hours}h</span>
                     </div>
                     {g.rest.length > 0 && (
-                      <div className="text-xs text-gray-600 mt-0.5">
+                      <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
                         {g.rest.map(p => `${p.friendName} ${p.hours}h`).join(' · ')}
                       </div>
                     )}
@@ -264,7 +262,7 @@ function InsightsView({ friends }) {
 
       {/* Perfiles similares */}
       <div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users size={13} /> Perfiles similares</div>
+        <div className="text-xs font-medium uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users size={13} /> Perfiles similares</div>
         {similarPairs.length === 0
           ? <div className="text-sm text-gray-600">No hay suficientes datos de géneros. Usá el refresh en cada perfil.</div>
           : (() => {
@@ -1062,9 +1060,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       {actives.length>0 && (
                         <div className="flex flex-wrap gap-1.5 mt-3">
                           {actives.slice(0,3).map(g=>(
-                            <div key={g.id} className="flex items-center gap-1.5 bg-purple-900/30 border border-purple-500/20 rounded-lg px-2 py-1">
+                            <div key={g.id} className="flex items-center gap-1.5 rounded-lg px-2 py-1" style={{background:'rgba(127,119,221,0.1)', border:'1px solid rgba(127,119,221,0.2)'}}>
                               {g.cover_url && <img src={g.cover_url} alt="" className="w-4 h-5 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                              <span className="text-xs text-purple-300 truncate max-w-24">{g.title}</span>
+                              <span className="text-xs truncate max-w-24" style={{color:'rgba(127,119,221,0.9)'}}>{g.title}</span>
                             </div>
                           ))}
                           {actives.length>3 && <span className="text-xs text-gray-600 self-center">+{actives.length-3} más</span>}
@@ -1139,7 +1137,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {/* Recurring games badges */}
                 {recurringGames.length>0 && (
                   <div className="mb-6">
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Juegos recurrentes</div>
+                    <div className="text-xs font-medium uppercase tracking-wider mb-2">Juegos recurrentes</div>
                     <div className="flex flex-wrap gap-2">
                       {recurringGames.map(g=>(
                         <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-card-hover)"}}>
@@ -1162,7 +1160,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {activeGames.length>0 && (
                   <>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">En progreso</div>
+                      <div className="text-xs font-medium uppercase tracking-wider">En progreso</div>
                       <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
                         <button onClick={()=>setSortOrder('hours')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='hours'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Horas</button>
                         <button onClick={()=>setSortOrder('alpha')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='alpha'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>A–Z</button>
@@ -1171,7 +1169,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     </div>
                     <div className="space-y-3 mb-8">
                       {activeGames.map(g=>(
-                        <div key={g.id} className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
+                        <div key={g.id} className="rounded-xl p-4"  style={{background:"var(--bg-card)"}}>
                           <div className="flex gap-3">
                             {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                             <div className="flex-1 min-w-0">
@@ -1232,7 +1230,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {/* History */}
                 {history.length>0 && (
                   <>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Historial</div>
+                    <div className="text-xs font-medium uppercase tracking-wider mb-3">Historial</div>
                     <div className="space-y-2">
                       {history.map(g=>(
                         <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
@@ -1242,7 +1240,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                               <span className="text-sm text-gray-200">{g.title}</span>
                               <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
                             </div>
-                            <div className="text-xs text-gray-600 mt-0.5">
+                            <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
                               {g.hours_played}h
                               {(()=>{
                                 const lp = g.last_played_at||g.started_at
@@ -1279,11 +1277,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
                 {/* Chart sidebar — desktop only */}
                 <div className="hidden md:block w-64 flex-shrink-0 sticky top-8" style={{maxHeight:'calc(100vh - 64px)', overflowY:'auto', scrollbarWidth:'none'}}>
-                  <div className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
-                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
+                  <div className="rounded-xl p-4"  style={{background:"var(--bg-card)"}}>
+                    <div className="text-xs font-medium uppercase tracking-wider mb-4">Géneros jugados</div>
                     <GenreRadarChart games={selectedFriend?.games||[]} />
                     <div className="mt-5 pt-4 border-t border-white/5">
-                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Resumen</div>
+                      <div className="text-xs font-medium uppercase tracking-wider mb-3">Resumen</div>
                       {[
                         { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300' },
                         { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300' },
@@ -1312,11 +1310,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
               {/* Chart mobile — below games */}
               <div className="md:hidden mt-6">
-                <div className="rounded-xl border border-white/5 p-4" style={{background:"var(--bg-card)"}}>
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-4">Géneros jugados</div>
+                <div className="rounded-xl p-4"  style={{background:"var(--bg-card)"}}>
+                  <div className="text-xs font-medium uppercase tracking-wider mb-4">Géneros jugados</div>
                   <GenreRadarChart games={selectedFriend?.games||[]} />
                     <div className="mt-5 pt-4 border-t border-white/5">
-                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Resumen</div>
+                      <div className="text-xs font-medium uppercase tracking-wider mb-3">Resumen</div>
                       {[
                         { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300' },
                         { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300' },
