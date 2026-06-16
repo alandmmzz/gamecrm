@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -206,7 +206,7 @@ function InsightsView({ friends }) {
 
       {/* Juegos en común */}
       <div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🎮 Juegos en común</div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Gamepad2 size={13} /> Juegos en común</div>
         {sharedGames.length === 0
           ? <div className="text-sm text-gray-600">No hay juegos en común aún.</div>
           : <div className="space-y-2">
@@ -237,7 +237,7 @@ function InsightsView({ friends }) {
 
       {/* El más dedicado */}
       <div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🏆 El más dedicado</div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Trophy size={13} /> El más dedicado</div>
         {topPlayers.length === 0
           ? <div className="text-sm text-gray-600">No hay datos suficientes aún.</div>
           : <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -247,7 +247,7 @@ function InsightsView({ friends }) {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-gray-400 truncate">{g.title}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-white font-medium text-sm">🥇 {g.leader.friendName}</span>
+                      <span className="text-white font-medium text-sm flex items-center gap-1"><Medal size={14} className="text-amber-400" />{g.leader.friendName}</span>
                       <span className="text-purple-400 text-xs font-medium">{g.leader.hours}h</span>
                     </div>
                     {g.rest.length > 0 && (
@@ -264,7 +264,7 @@ function InsightsView({ friends }) {
 
       {/* Perfiles similares */}
       <div>
-        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">🧬 Perfiles similares</div>
+        <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users size={13} /> Perfiles similares</div>
         {similarPairs.length === 0
           ? <div className="text-sm text-gray-600">No hay suficientes datos de géneros. Usá el refresh en cada perfil.</div>
           : (() => {
@@ -985,7 +985,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {/* Mobile header */}
           <div className="md:hidden flex items-center justify-between mb-6">
             <div className="flex items-center gap-2 cursor-pointer" onClick={()=>{setView('list');setSelected(null)}}>
-              <span className="text-xl">🎮</span>
+              <Gamepad2 size={20} className="text-purple-400" />
               <span className="font-semibold text-white">Game CRM</span>
             </div>
 
@@ -1675,7 +1675,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                             <img src={g.cover_url} alt="" className="w-10 h-6 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
                             <span className="text-sm text-gray-300 flex-1 truncate">{g.title}</span>
                             {existing && <span className="text-xs text-teal-600 flex-shrink-0">↑ horas</span>}
-                {g.last_played && <span className="text-xs text-gray-600 flex-shrink-0">{new Date(g.last_played).toLocaleDateString('es-CL')}</span>}{g.achievement_pct != null && <span className="text-xs text-teal-600 flex-shrink-0">🏆 {g.achievement_pct}%</span>}<span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
+                {g.last_played && <span className="text-xs text-gray-600 flex-shrink-0">{new Date(g.last_played).toLocaleDateString('es-CL')}</span>}{g.achievement_pct != null && <span className="text-xs text-teal-600 flex-shrink-0 flex items-center gap-0.5"><Trophy size={11} />{g.achievement_pct}%</span>}<span className="text-xs text-gray-600 flex-shrink-0">{g.hours_played}h</span>
                           </label>
                         )
                       })}
