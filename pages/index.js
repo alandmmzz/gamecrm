@@ -211,7 +211,8 @@ function InsightsView({ friends }) {
           ? <div className="text-sm text-gray-600">No hay juegos en común aún.</div>
           : <div className="space-y-2">
               {sharedGames.map(g => (
-                <div key={g.title} className="rounded-xl p-3 flex gap-3 items-center" style={{background:"var(--bg-card)", border:'1px solid var(--border)'}}> onError={e=>e.target.style.display='none'} />}
+                <div key={g.title} className="rounded-xl p-3 flex gap-3 items-center" style={{background:"var(--bg-card)", border:'1px solid var(--border)'}}>
+                  {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-10 h-14 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-white text-sm mb-1">{g.title}</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -241,7 +242,8 @@ function InsightsView({ friends }) {
           ? <div className="text-sm text-gray-600">No hay datos suficientes aún.</div>
           : <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {topPlayers.map(g => (
-                <div key={g.title} className="rounded-xl p-3 flex gap-3 items-center" style={{background:"var(--bg-card)", border:'1px solid var(--border)'}}> onError={e=>e.target.style.display='none'} />}
+                <div key={g.title} className="rounded-xl p-3 flex gap-3 items-center" style={{background:"var(--bg-card)", border:'1px solid var(--border)'}}>
+                  {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-gray-400 truncate">{g.title}</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
