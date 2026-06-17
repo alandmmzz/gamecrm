@@ -948,9 +948,13 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile');window.scrollTo({top:0,behavior:'smooth'})}}}>
 
                 {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
-                  ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
-                  : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0 avatar-initials">{(myProfile?.name||'?')[0]}</div>
-                }
+                  ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
+                      onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                  : null}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0 avatar-initials"
+                  style={{display:(myProfile?.avatar_url || session.user.user_metadata?.avatar_url) ? 'none' : 'flex'}}>
+                  {(myProfile?.name||'?')[0]}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate group-hover:opacity-80 transition-opacity" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                 </div>
