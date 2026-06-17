@@ -1787,35 +1787,85 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 )}
 
                 {/* TAB: Actividad */}
-                {profileTab==='activity' && (
-                  <div className="space-y-2">
-                    {profileActivity.length === 0
-                      ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
-                      : profileActivity.map(g => (
-                          <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
-                            {g.cover_url
-                              ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                              : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(selectedFriend.name)}</div>
-                            }
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</div>
-                              <div className="text-xs" style={{color:'var(--text-muted)'}}>
-                                {g.hours_played}h
-                                {(()=>{
-                                  const lp = g.last_played_at||g.started_at
-                                  const fin = g.finished_at
-                                  if (lp) return ` · últ. vez ${fmtDate(lp)}`
-                                  if (fin) return ` · fin ${fmtDate(fin)}`
-                                  return ''
-                                })()}
+                {profileTab==='activity' && (() => {
+                  // Merge this friend's games + their reviews
+                  const gameItems = profileActivity.map(g => ({
+                    type: 'game',
+                    date: new Date(g.last_played_at||g.started_at||g.created_at||0),
+                    key: `game-${g.id}`,
+                    data: g,
+                  }))
+                  const reviewItems = reviews
+                    .filter(r => r.friend_id === selectedFriend.id)
+                    .map(r => ({
+                      type: 'review',
+                      date: new Date(r.created_at||0),
+                      key: `review-${r.id}`,
+                      data: r,
+                    }))
+                  const feed = [...gameItems, ...reviewItems].sort((a,b) => b.date - a.date)
+
+                  return (
+                    <div className="space-y-2">
+                      {feed.length === 0
+                        ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
+                        : feed.map(item => {
+                          if (item.type === 'game') {
+                            const g = item.data
+                            return (
+                              <div key={item.key} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                                {g.cover_url
+                                  ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                                  : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(selectedFriend.name)}</div>
+                                }
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</div>
+                                  <div className="text-xs" style={{color:'var(--text-muted)'}}>
+                                    {g.hours_played}h
+                                    {(()=>{
+                                      const lp = g.last_played_at||g.started_at
+                                      const fin = g.finished_at
+                                      if (lp) return ` · últ. vez ${fmtDate(lp)}`
+                                      if (fin) return ` · fin ${fmtDate(fin)}`
+                                      return ''
+                                    })()}
+                                  </div>
+                                </div>
+                                <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
                               </div>
+                            )
+                          }
+                          // type === 'review'
+                          const r = item.data
+                          return (
+                            <div key={item.key} className="flex items-start gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                              {selectedFriend.avatar_url
+                                ? <img src={selectedFriend.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                                : null}
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 avatar-initials"
+                                style={{display: selectedFriend.avatar_url ? 'none' : 'flex', fontSize:'10px'}}>
+                                {initials(selectedFriend.name)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm mb-1" style={{color:'var(--text-secondary)'}}>
+                                  Reseñó <span style={{color:'var(--text-primary)'}}>{r.game_title}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <StarDisplay value={r.rating} size={11} />
+                                  <span className="text-xs font-medium" style={{color:'#EF9F27'}}>{r.rating}/5</span>
+                                  {r.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
+                                </div>
+                                {r.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{r.comment}</p>}
+                                <div className="text-xs mt-1" style={{color:'var(--text-muted)', opacity:0.6}}>{fmtDate(r.created_at)}</div>
+                              </div>
+                              {r.game_cover && <img src={r.game_cover} alt={r.game_title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                             </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
-                          </div>
-                        ))
-                    }
-                  </div>
-                )}
+                          )
+                        })
+                      }
+                    </div>
+                  )
+                })()}
 
                 {/* TAB: Reseñas */}
                 {profileTab==='reviews' && (() => {
@@ -1902,38 +1952,87 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           )}
 
           {/* Activity tab */}
-          {view==='activity' && (
-            <div className="space-y-2">
-              {allGames.length===0
-                ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
-                : allGames.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(g=>{
-                    const color = COLOR_MAP[COLORS[g.friendIdx%COLORS.length]]
-                    return (
-                      <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
-                        {g.cover_url
-                          ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                          : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(g.friendName)}</div>
-                        }
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
-                          <div className="text-xs" style={{color:'var(--text-muted)'}}>
-                            {g.hours_played}h
-                            {(()=>{
-                              const lp = g.last_played_at||g.started_at
-                              const fin = g.finished_at
-                              if (lp) return ` · últ. vez ${fmtDate(lp)}`
-                              if (fin) return ` · fin ${fmtDate(fin)}`
-                              return ''
-                            })()}
+          {view==='activity' && (() => {
+            // Merge games + reviews into one feed sorted by date
+            const gameItems = allGames.map(g => ({
+              type: 'game',
+              date: new Date(g.last_played_at||g.started_at||g.created_at||0),
+              key: `game-${g.id}`,
+              data: g,
+            }))
+            const reviewItems = reviews.map(r => {
+              const friend = friends.find(f => f.id === r.friend_id)
+              const friendIdx = friends.findIndex(f => f.id === r.friend_id)
+              return {
+                type: 'review',
+                date: new Date(r.created_at||0),
+                key: `review-${r.id}`,
+                data: { ...r, friendName: friend?.name, friendAvatar: friend?.avatar_url, friendIdx },
+              }
+            })
+            const feed = [...gameItems, ...reviewItems].sort((a,b) => b.date - a.date)
+
+            return (
+              <div className="space-y-2">
+                {feed.length === 0
+                  ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
+                  : feed.map(item => {
+                    if (item.type === 'game') {
+                      const g = item.data
+                      return (
+                        <div key={item.key} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                          {g.cover_url
+                            ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                            : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(g.friendName)}</div>
+                          }
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
+                            <div className="text-xs" style={{color:'var(--text-muted)'}}>
+                              {g.hours_played}h
+                              {(()=>{
+                                const lp = g.last_played_at||g.started_at
+                                const fin = g.finished_at
+                                if (lp) return ` · últ. vez ${fmtDate(lp)}`
+                                if (fin) return ` · fin ${fmtDate(fin)}`
+                                return ''
+                              })()}
+                            </div>
                           </div>
+                          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
                         </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
+                      )
+                    }
+                    // type === 'review'
+                    const r = item.data
+                    return (
+                      <div key={item.key} className="flex items-start gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                        {r.friendAvatar
+                          ? <img src={r.friendAvatar} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                          : null}
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 avatar-initials"
+                          style={{display: r.friendAvatar ? 'none' : 'flex', fontSize:'10px'}}>
+                          {initials(r.friendName||'?')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm mb-1" style={{color:'var(--text-secondary)'}}>
+                            <span className="text-gray-500">{r.friendName}</span> reseñó <span style={{color:'var(--text-primary)'}}>{r.game_title}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <StarDisplay value={r.rating} size={11} />
+                            <span className="text-xs font-medium" style={{color:'#EF9F27'}}>{r.rating}/5</span>
+                            {r.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
+                          </div>
+                          {r.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{r.comment}</p>}
+                          <div className="text-xs mt-1" style={{color:'var(--text-muted)', opacity:0.6}}>{fmtDate(r.created_at)}</div>
+                        </div>
+                        {r.game_cover && <img src={r.game_cover} alt={r.game_title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                       </div>
                     )
                   })
-              }
-            </div>
-          )}
+                }
+              </div>
+            )
+          })()}
 
         </div>
       </div>
