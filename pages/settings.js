@@ -39,7 +39,18 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
     router.push('/login')
   }
 
+  const [avatarError, setAvatarError] = useState('')
+
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  const ALLOWED_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
+
   const uploadAvatar = async (file) => {
+    setAvatarError('')
+    const ext = '.' + file.name.split('.').pop().toLowerCase()
+    if (!ALLOWED_TYPES.includes(file.type) || !ALLOWED_EXT.includes(ext)) {
+      setAvatarError(`Formato no soportado. Usá JPG, PNG, WEBP o GIF.`)
+      return
+    }
     if (!file || !myProfile?.id) return
     setAvatarUploading(true)
     try {
@@ -127,13 +138,15 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
                   <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <Camera size={14} className="text-white" />
                   </div>
-                  <input type="file" accept="image/*" className="hidden" disabled={avatarUploading}
+                  <input type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={avatarUploading}
                     onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])} />
                 </label>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium" style={{color:'var(--text-primary)'}}>{myProfile?.name || 'Usuario'}</div>
                   <div className="text-xs" style={{color:'var(--text-muted)'}}>{session.user.email}</div>
-                  <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>{avatarUploading ? 'Subiendo...' : 'Tocá la foto para cambiarla'}</div>
+                  <div className="text-xs mt-0.5" style={{color: avatarError ? 'rgb(239,68,68)' : 'var(--text-muted)'}}>
+                    {avatarUploading ? 'Subiendo...' : avatarError || 'Tocá la foto para cambiarla'}
+                  </div>
                 </div>
               </div>
               {/* Edit name */}
