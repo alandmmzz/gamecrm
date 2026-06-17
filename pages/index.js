@@ -1317,8 +1317,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         <div className="flex flex-wrap gap-2">
                           {recurringGames.map(g=>(
                             <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-card-hover)"}}>
-                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                              <span className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</span>
+                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)} onError={e=>e.target.style.display='none'} />}
+                              <span className="text-sm cursor-pointer hover:opacity-70 transition-opacity" style={{color:'var(--text-secondary)'}} onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)}>{g.title}</span>
                               <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                 {canEdit(selectedFriend?.id) && <>
@@ -1347,10 +1347,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                           {activeGames.map(g=>(
                             <div key={g.id} className="rounded-xl p-4" style={{background:"var(--bg-card)"}}>
                               <div className="flex gap-3">
-                                {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                                {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)} onError={e=>e.target.style.display='none'} />}
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-start justify-between gap-2 mb-1">
-                                    <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
+                                    <div className="font-medium cursor-pointer hover:opacity-70 transition-opacity" style={{color:'var(--text-primary)'}} onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)}>{g.title}</div>
                                     <div className="flex gap-1 flex-shrink-0">
                                       {canEdit(selectedFriend?.id) && <>
                                         <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 p-1 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors"><Sparkles size={12} /></button>
@@ -1468,10 +1468,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         <div className="space-y-2">
                           {history.map(g=>(
                             <div key={g.id} className="group flex items-start gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
-                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)} onError={e=>e.target.style.display='none'} />}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-sm text-gray-200">{g.title}</span>
+                                  <span className="text-sm text-gray-200 cursor-pointer hover:opacity-70 transition-opacity" onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)}>{g.title}</span>
                                   <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
                                 </div>
                                 <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
