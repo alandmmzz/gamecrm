@@ -1109,6 +1109,89 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               : 0
             const topGame = [...(selectedFriend.games||[])].sort((a,b)=>(b.hours_played||0)-(a.hours_played||0))[0]
 
+            // — Tiempo restante acumulado (juegos en progreso con hltb_main)
+            const hoursRemaining = (selectedFriend.games||[])
+              .filter(g => g.status==='playing' && g.hltb_main && !g.no_progress)
+              .reduce((s,g) => s + Math.max(0, g.hltb_main - (g.hours_played||0)), 0)
+
+            // — Tasa de abandono
+            const dropRate = totalGames ? Math.round(((selectedFriend.games||[]).filter(g=>g.status==='dropped').length / totalGames)*100) : 0
+            const groupDropRate = (() => {
+              const all = friends.flatMap(f=>f.games||[])
+              return all.length ? Math.round((all.filter(g=>g.status==='dropped').length / all.length)*100) : 0
+            })()
+
+            // — Logro más alto
+            const topAchievementGame = [...(selectedFriend.games||[])]
+              .filter(g => g.achievement_pct != null && g.achievement_pct > 0)
+              .sort((a,b) => (b.achievement_pct||0)-(a.achievement_pct||0))[0]
+
+            // — Perfil más similar (top 3 géneros en común)
+            const myGenreMap = {}
+            ;(selectedFriend.games||[]).forEach(g => {
+              ;(g.genres||[]).forEach(genre => {
+                myGenreMap[genre] = (myGenreMap[genre]||0) + (g.hours_played||0)
+              })
+            })
+            const myTop3 = Object.entries(myGenreMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
+            const similarFriend = friends
+              .filter(f => f.id !== selectedFriend.id)
+              .map(f => {
+                const theirGenreMap = {}
+                ;(f.games||[]).forEach(g => {
+                  ;(g.genres||[]).forEach(genre => {
+                    theirGenreMap[genre] = (theirGenreMap[genre]||0) + (g.hours_played||0)
+                  })
+                })
+                const theirTop3 = Object.entries(theirGenreMap).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
+                const common = myTop3.filter(g => theirTop3.includes(g))
+                return { friend: f, common, score: common.length }
+              })
+              .filter(x => x.score > 0)
+              .sort((a,b) => b.score - a.score)[0]
+
+            // — Rival de horas (amigo más cercano en total de horas)
+            const myTotalH = totalH
+            const hoursRival = friends
+              .filter(f => f.id !== selectedFriend.id)
+              .map(f => {
+                const fH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
+                return { friend: f, hours: fH, diff: Math.abs(fH - myTotalH), fH }
+              })
+              .sort((a,b) => a.diff - b.diff)[0]
+
+            // — Juegos en común con cada amigo
+            const myTitles = new Set((selectedFriend.games||[]).map(g=>g.title.toLowerCase().trim()))
+            const commonWithFriends = friends
+              .filter(f => f.id !== selectedFriend.id)
+              .map(f => {
+                const common = (f.games||[]).filter(g => myTitles.has(g.title.toLowerCase().trim()))
+                return { friend: f, count: common.length, games: common.slice(0,3) }
+              })
+              .filter(x => x.count > 0)
+              .sort((a,b) => b.count - a.count)
+              .slice(0,3)
+
+            // — Primero en completar (juegos compartidos donde hay fecha de fin)
+            const firstToFinish = (() => {
+              const results = []
+              ;(selectedFriend.games||[]).forEach(myGame => {
+                if (!myGame.finished_at) return
+                const key = myGame.title.toLowerCase().trim()
+                friends.forEach(f => {
+                  if (f.id === selectedFriend.id) return
+                  const theirGame = (f.games||[]).find(g => g.title.toLowerCase().trim() === key && g.finished_at)
+                  if (!theirGame) return
+                  const myDate = new Date(myGame.finished_at)
+                  const theirDate = new Date(theirGame.finished_at)
+                  if (myDate < theirDate) {
+                    results.push({ title: myGame.title, cover_url: myGame.cover_url, beat: f.name, diffDays: Math.round((theirDate-myDate)/(1000*60*60*24)) })
+                  }
+                })
+              })
+              return results.sort((a,b)=>a.diffDays-b.diffDays).slice(0,3)
+            })()
+
             // Profile activity (this friend's games sorted by last activity)
             const profileActivity = [...(selectedFriend.games||[])].sort((a,b)=>{
               const da = new Date(b.last_played_at||b.finished_at||b.started_at||b.created_at||0).getTime()
@@ -1340,12 +1423,13 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
                 {/* TAB: Stats */}
                 {profileTab==='stats' && (
-                  <div>
-                    {/* Quick numbers row */}
-                    <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="space-y-4">
+
+                    {/* Quick numbers — 3 top KPIs */}
+                    <div className="grid grid-cols-3 gap-3">
                       {[
                         { label: 'Juegos totales', value: totalGames },
-                        { label: 'Horas jugadas', value: `${Math.round(totalH)}h` },
+                        { label: 'Horas jugadas',  value: `${Math.round(totalH)}h` },
                         { label: 'Completitud media', value: completedGames.length ? `${avgCompletion}%` : '—' },
                       ].map(({label, value}) => (
                         <div key={label} className="rounded-xl p-4 text-center" style={{background:'var(--bg-card)'}}>
@@ -1355,8 +1439,35 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       ))}
                     </div>
 
+                    {/* Second row — horas restantes + tasa abandono + logro */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-xl p-4 text-center" style={{background:'var(--bg-card)'}}>
+                        <div className="text-xl font-semibold mb-1" style={{color:'#7F77DD'}}>
+                          {hoursRemaining > 0 ? `~${Math.round(hoursRemaining)}h` : '—'}
+                        </div>
+                        <div className="text-xs" style={{color:'var(--text-muted)'}}>Horas restantes</div>
+                        {hoursRemaining > 0 && <div className="text-xs mt-0.5" style={{color:'var(--text-muted)', opacity:0.6}}>para terminar todo</div>}
+                      </div>
+                      <div className="rounded-xl p-4 text-center" style={{background:'var(--bg-card)'}}>
+                        <div className="text-xl font-semibold mb-1" style={{color: dropRate > groupDropRate ? '#E07B6A' : '#5DCAA5'}}>
+                          {totalGames ? `${dropRate}%` : '—'}
+                        </div>
+                        <div className="text-xs" style={{color:'var(--text-muted)'}}>Tasa abandono</div>
+                        {totalGames > 0 && <div className="text-xs mt-0.5" style={{color: dropRate > groupDropRate ? '#E07B6A' : '#5DCAA5', opacity:0.8}}>
+                          {dropRate > groupDropRate ? `↑ grupo ${groupDropRate}%` : `↓ grupo ${groupDropRate}%`}
+                        </div>}
+                      </div>
+                      <div className="rounded-xl p-4 text-center" style={{background:'var(--bg-card)'}}>
+                        <div className="text-xl font-semibold mb-1" style={{color:'#EF9F27'}}>
+                          {topAchievementGame ? `${topAchievementGame.achievement_pct}%` : '—'}
+                        </div>
+                        <div className="text-xs" style={{color:'var(--text-muted)'}}>Mejor logro</div>
+                        {topAchievementGame && <div className="text-xs mt-0.5 truncate px-1" style={{color:'var(--text-muted)', opacity:0.7}}>{topAchievementGame.title}</div>}
+                      </div>
+                    </div>
+
                     {/* Status breakdown */}
-                    <div className="rounded-xl p-4 mb-4" style={{background:'var(--bg-card)'}}>
+                    <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
                       <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Distribución por estado</div>
                       <div className="space-y-3">
                         {statuses.map(({ label, key, color, badge, dot }) => {
@@ -1390,11 +1501,139 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       )}
                     </div>
 
+                    {/* Social — perfil más similar + rival de horas */}
+                    {(similarFriend || hoursRival) && (
+                      <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
+                        <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Comparativa con el grupo</div>
+                        <div className="space-y-4">
+
+                          {similarFriend && (
+                            <div className="flex items-center gap-3">
+                              {similarFriend.friend.avatar_url
+                                ? <img src={similarFriend.friend.avatar_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                                : null}
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials"
+                                style={{display: similarFriend.friend.avatar_url ? 'none' : 'flex', fontSize:'11px'}}>
+                                {initials(similarFriend.friend.name)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs mb-0.5" style={{color:'var(--text-muted)'}}>Perfil más similar</div>
+                                <div className="text-sm font-medium" style={{color:'var(--text-primary)'}}>{similarFriend.friend.name}</div>
+                                <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
+                                  {similarFriend.score} géneros en común · {similarFriend.common.join(', ')}
+                                </div>
+                              </div>
+                              <button onClick={()=>{setSelected(similarFriend.friend.id);setProfileTab('games');window.scrollTo({top:0,behavior:'smooth'})}}
+                                className="text-xs px-2.5 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex-shrink-0"
+                                style={{color:'var(--text-muted)'}}>
+                                Ver perfil
+                              </button>
+                            </div>
+                          )}
+
+                          {hoursRival && (
+                            <div className="flex items-center gap-3">
+                              {hoursRival.friend.avatar_url
+                                ? <img src={hoursRival.friend.avatar_url} className="w-9 h-9 rounded-full object-cover flex-shrink-0" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                                : null}
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials"
+                                style={{display: hoursRival.friend.avatar_url ? 'none' : 'flex', fontSize:'11px'}}>
+                                {initials(hoursRival.friend.name)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs mb-0.5" style={{color:'var(--text-muted)'}}>Rival de horas</div>
+                                <div className="text-sm font-medium" style={{color:'var(--text-primary)'}}>{hoursRival.friend.name} · {Math.round(hoursRival.fH)}h</div>
+                                <div className="text-xs mt-0.5" style={{color: hoursRival.fH > myTotalH ? '#E07B6A' : '#5DCAA5'}}>
+                                  {hoursRival.fH > myTotalH
+                                    ? `te lleva ${Math.round(hoursRival.diff)}h de ventaja`
+                                    : hoursRival.fH < myTotalH
+                                      ? `le llevás ${Math.round(hoursRival.diff)}h de ventaja`
+                                      : 'empatados exacto 👀'}
+                                </div>
+                              </div>
+                              <button onClick={()=>{setSelected(hoursRival.friend.id);setProfileTab('games');window.scrollTo({top:0,behavior:'smooth'})}}
+                                className="text-xs px-2.5 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 transition-colors flex-shrink-0"
+                                style={{color:'var(--text-muted)'}}>
+                                Ver perfil
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Juegos en común con amigos */}
+                    {commonWithFriends.length > 0 && (
+                      <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
+                        <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Juegos en común</div>
+                        <div className="space-y-3">
+                          {commonWithFriends.map(({ friend: f, count, games }) => (
+                            <div key={f.id} className="flex items-center gap-3">
+                              {f.avatar_url
+                                ? <img src={f.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                                : null}
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials"
+                                style={{display: f.avatar_url ? 'none' : 'flex', fontSize:'10px'}}>
+                                {initials(f.name)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-sm" style={{color:'var(--text-primary)'}}>{f.name}</span>
+                                  <span className="text-xs font-medium text-purple-400">{count} juego{count>1?'s':''}</span>
+                                </div>
+                                <div className="flex gap-1 flex-wrap">
+                                  {games.map(g => (
+                                    <span key={g.id} className="text-xs px-1.5 py-0.5 rounded-full" style={{background:'var(--tag-bg)', border:'1px solid var(--tag-border)', color:'var(--text-muted)'}}>
+                                      {g.title.length > 18 ? g.title.slice(0,17)+'…' : g.title}
+                                    </span>
+                                  ))}
+                                  {count > 3 && <span className="text-xs" style={{color:'var(--text-muted)'}}>+{count-3} más</span>}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Primero en completar */}
+                    {firstToFinish.length > 0 && (
+                      <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
+                        <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Primero en terminar</div>
+                        <div className="space-y-3">
+                          {firstToFinish.map((item, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                              {item.cover_url && <img src={item.cover_url} alt={item.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm truncate" style={{color:'var(--text-primary)'}}>{item.title}</div>
+                                <div className="text-xs mt-0.5" style={{color:'#5DCAA5'}}>
+                                  {item.diffDays === 0
+                                    ? `mismo día que ${item.beat}`
+                                    : `${item.diffDays}d antes que ${item.beat}`}
+                                </div>
+                              </div>
+                              <Medal size={14} className="text-amber-400 flex-shrink-0" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reseñas placeholder */}
+                    <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
+                      <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Reseñas escritas</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-semibold text-white">0</span>
+                        <span className="text-xs px-2 py-1 rounded-lg" style={{background:'rgba(127,119,221,0.1)', color:'rgba(127,119,221,0.7)'}}>próximamente</span>
+                      </div>
+                    </div>
+
                     {/* Genre radar */}
                     <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
                       <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Géneros jugados</div>
                       <GenreRadarChart games={selectedFriend?.games||[]} />
                     </div>
+
                   </div>
                 )}
 
