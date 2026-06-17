@@ -51,17 +51,18 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
       setAvatarError(`Formato no soportado. Usá JPG, PNG, WEBP o GIF.`)
       return
     }
-    if (!file || !myProfile?.id) return
+    if (!myProfile?.id) return
     setAvatarUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `${myProfile.id}/avatar.${ext}`
+      const fileExt = file.name.split('.').pop()
+      const path = `${myProfile.id}/avatar.${fileExt}`
       await supabase.storage.from('avatars').upload(path, file, { upsert: true })
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       const url = data.publicUrl + '?t=' + Date.now()
-      await supabase.from('friends').update({ avatar_url: url }).eq('id', myProfile.id)
+      await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: myProfile.id, avatar_url: url }) })
       setMyProfile(p => ({...p, avatar_url: url}))
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); setAvatarError('Error al subir la foto') }
     setAvatarUploading(false)
   }
 
@@ -132,8 +133,11 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
               <div className="flex items-center gap-3 px-4 py-3.5" style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)'}}>
                 <label className="cursor-pointer flex-shrink-0 relative group">
                   {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
-                    ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-12 h-12 rounded-full object-cover" />
-                    : <div className="w-12 h-12 rounded-full bg-purple-900/40 flex items-center justify-center text-purple-300">{(myProfile?.name||'?')[0]}</div>
+                    ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-12 h-12 rounded-full object-cover"
+                        onError={e=>e.target.style.display='none'} />
+                    : <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold avatar-initials">
+                        {(myProfile?.name||'?')[0].toUpperCase()}
+                      </div>
                   }
                   <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <Camera size={14} className="text-white" />
