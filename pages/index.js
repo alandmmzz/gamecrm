@@ -1094,9 +1094,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   ‹ Volver
                 </button>
                 <div className="flex items-center gap-4 mb-8">
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-medium flex-shrink-0 ${color.bg} ${color.text}`}>
-                    {initials(selectedFriend.name)}
-                  </div>
+                  {selectedFriend.avatar_url
+                    ? <img src={selectedFriend.avatar_url} className="w-16 h-16 rounded-full object-cover flex-shrink-0" onError={e=>{e.target.style.display='none'}} />
+                    : <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-medium flex-shrink-0 avatar-initials">
+                        {initials(selectedFriend.name)}
+                      </div>
+                  }
                   <div className="flex-1">
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
