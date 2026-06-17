@@ -1004,7 +1004,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
           {/* Stats — only on list/activity/insights */}
           {view!=='profile' && <div className="grid grid-cols-3 gap-3 mb-6">
-            {[{num:friends.length,label:'Amigos'},{num:playing,label:'Jugando'},{num:`${Math.round(totalHours)}h`,label:'Horas'}].map(s=>(
+            {[{num:friends.length,label:'Usuarios'},{num:playing,label:'Jugando'},{num:`${Math.round(totalHours)}h`,label:'Horas'}].map(s=>(
               <div key={s.label} className="rounded-xl p-3" style={{background:'var(--stat-bg)',border:'1px solid var(--border)'}} style={{background:"var(--bg-card-hover)"}}>
                 <div className="text-xl font-semibold text-white">{s.num}</div>
                 <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>{s.label}</div>
