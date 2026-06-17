@@ -1042,9 +1042,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 avatar-initials">
-                          {initials(f.name)}
-                        </div>
+                        {f.avatar_url
+                          ? <img src={f.avatar_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                          : <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 avatar-initials">
+                              {initials(f.name)}
+                            </div>
+                        }
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{background:'rgba(127,119,221,0.2)',color:'rgb(80,70,180)'}}>yo</span>}</div>
                           <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
