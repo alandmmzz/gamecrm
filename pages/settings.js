@@ -62,6 +62,8 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
       await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ id: myProfile.id, avatar_url: url }) })
       setMyProfile(p => ({...p, avatar_url: url}))
+      // Small delay then reload so other pages pick up new avatar
+      setTimeout(() => window.location.reload(), 500)
     } catch (e) { console.error(e); setAvatarError('Error al subir la foto') }
     setAvatarUploading(false)
   }
