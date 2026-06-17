@@ -132,13 +132,17 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
             <Section title="Cuenta">
               <div className="flex items-center gap-3 px-4 py-3.5" style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)'}}>
                 <label className="cursor-pointer flex-shrink-0 relative group">
-                  {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
-                    ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-12 h-12 rounded-full object-cover"
-                        onError={e=>e.target.style.display='none'} />
-                    : <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold avatar-initials">
-                        {(myProfile?.name||'?')[0].toUpperCase()}
-                      </div>
-                  }
+                  {(() => {
+                    const url = myProfile?.avatar_url || session.user.user_metadata?.avatar_url
+                    return url
+                      ? <img src={url} className="w-12 h-12 rounded-full object-cover"
+                          onError={e=>{e.target.style.display='none'; e.target.nextSibling.style.display='flex'}} />
+                      : null
+                  })()}
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold avatar-initials"
+                    style={{display: (myProfile?.avatar_url || session.user.user_metadata?.avatar_url) ? 'none' : 'flex'}}>
+                    {(myProfile?.name||'?')[0].toUpperCase()}
+                  </div>
                   <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                     <Camera size={14} className="text-white" />
                   </div>
