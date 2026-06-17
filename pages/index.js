@@ -945,7 +945,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {/* User section at bottom */}
           <div className="mt-auto pt-4 border-t" style={{borderColor:'var(--border)'}}>
             {session ? (
-              <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile')}}}>
+              <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile');window.scrollTo({top:0,behavior:'smooth'})}}}>
+
                 {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
                   ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 object-cover" />
                   : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0 avatar-initials">{(myProfile?.name||'?')[0]}</div>
@@ -1038,16 +1039,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   const actives = f.games?.filter(g=>g.status==='playing')||[]
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
                   return (
-                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile')}}
+                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');window.scrollTo({top:0,behavior:'smooth'})}}
                       className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
                         {f.avatar_url
-                          ? <img src={f.avatar_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                          : <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 avatar-initials">
-                              {initials(f.name)}
-                            </div>
-                        }
+                          ? <img src={f.avatar_url} className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                          : null}
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 avatar-initials"
+                          style={{display: f.avatar_url ? 'none' : 'flex'}}>
+                          {initials(f.name)}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2"><span className="font-medium" style={{color:'var(--text-primary)'}}>{f.name}</span>{isOwner(f.id) && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{background:'rgba(127,119,221,0.2)',color:'rgb(80,70,180)'}}>yo</span>}</div>
                           <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
@@ -1098,11 +1101,13 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 </button>
                 <div className="flex items-center gap-4 mb-8">
                   {selectedFriend.avatar_url
-                    ? <img src={selectedFriend.avatar_url} className="w-16 h-16 rounded-full object-cover flex-shrink-0" onError={e=>{e.target.style.display='none'}} />
-                    : <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-medium flex-shrink-0 avatar-initials">
-                        {initials(selectedFriend.name)}
-                      </div>
-                  }
+                    ? <img src={selectedFriend.avatar_url} className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                        onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                    : null}
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-medium flex-shrink-0 avatar-initials"
+                    style={{display: selectedFriend.avatar_url ? 'none' : 'flex'}}>
+                    {initials(selectedFriend.name)}
+                  </div>
                   <div className="flex-1">
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
