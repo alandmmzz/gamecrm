@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal, Star, MessageSquare } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -14,6 +14,16 @@ const COLOR_MAP = {
   amber:  { bg: 'bg-amber-900/40',  text: 'text-amber-300' },
 }
 const initials = (n) => n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2)
+
+function StarDisplay({ value, size = 12 }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(n => (
+        <Star key={n} size={size} style={{fill: n <= value ? '#EF9F27' : 'transparent', stroke: n <= value ? '#EF9F27' : 'var(--text-muted)', flexShrink:0}} />
+      ))}
+    </span>
+  )
+}
 
 
 const GENRE_COLORS = [
@@ -340,6 +350,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [gearOpen, setGearOpen] = useState(false)
   const [generatedRole, setGeneratedRole] = useState(null)
   const [adminView, setAdminView] = useState(true)
+  const [reviews, setReviews] = useState([]) // all reviews
+  const [expandedReviews, setExpandedReviews] = useState({}) // game title -> bool
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
   const [profileTab, setProfileTab] = useState('games') // 'games' | 'stats' | 'reviews' | 'activity'
 
@@ -425,7 +437,26 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     setFriends(data || [])
     setLoading(false)
   }
-  useEffect(() => { fetchFriends() }, [])
+  const fetchReviews = async () => {
+    try {
+      const r = await fetch('/api/reviews')
+      const data = await r.json()
+      setReviews(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+  useEffect(() => { fetchFriends(); fetchReviews() }, [])
+
+  // Handle ?profile= param when returning from /review
+  useEffect(() => {
+    if (!router.isReady) return
+    const profileId = router.query.profile
+    if (profileId) {
+      setSelected(profileId)
+      setView('profile')
+      setProfileTab('reviews')
+      router.replace('/', undefined, { shallow: true })
+    }
+  }, [router.isReady, router.query.profile])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -1364,6 +1395,63 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                       </div>
                                     </>
                                   )}
+                                  {/* Reviews summary + button */}
+                                  {(() => {
+                                    const gameReviews = reviews.filter(r => r.game_title.toLowerCase() === g.title.toLowerCase())
+                                    const avgRating = gameReviews.length ? (gameReviews.reduce((s,r)=>s+r.rating,0)/gameReviews.length).toFixed(1) : null
+                                    const myReview = gameReviews.find(r => r.friend_id === myProfile?.id)
+                                    return (
+                                      <div className="mt-3 pt-3 border-t border-white/5">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex items-center gap-2">
+                                            {avgRating
+                                              ? <><StarDisplay value={Math.round(avgRating)} size={11} /><span className="text-xs font-medium" style={{color:'#EF9F27'}}>{avgRating}</span><span className="text-xs" style={{color:'var(--text-muted)'}}>({gameReviews.length})</span></>
+                                              : <span className="text-xs" style={{color:'var(--text-muted)'}}>Sin reseñas aún</span>
+                                            }
+                                          </div>
+                                          <button
+                                            onClick={()=>router.push(`/review?game=${encodeURIComponent(g.title+'|||'+(g.cover_url||''))}&from=${selectedFriend.id}`)}
+                                            className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:bg-white/5 flex items-center gap-1 flex-shrink-0"
+                                            style={{borderColor:'rgba(127,119,221,0.3)', color:'#7F77DD'}}>
+                                            <Star size={10} style={{fill: myReview ? '#7F77DD' : 'transparent', stroke:'#7F77DD'}} />
+                                            {myReview ? 'Tu reseña' : 'Reseñar'}
+                                          </button>
+                                        </div>
+                                        {gameReviews.length > 0 && (
+                                          <>
+                                            <button onClick={()=>setExpandedReviews(p=>({...p,[g.title]:!p[g.title]}))}
+                                              className="flex items-center gap-1 text-xs mt-2 transition-colors hover:opacity-80"
+                                              style={{color:'var(--text-muted)'}}>
+                                              <MessageSquare size={11} />
+                                              {expandedReviews[g.title] ? 'Ocultar reseñas' : `Ver reseñas (${gameReviews.length})`}
+                                            </button>
+                                            {expandedReviews[g.title] && (
+                                              <div className="mt-3 space-y-3">
+                                                {gameReviews.map(rev => (
+                                                  <div key={rev.id} className="flex gap-2.5">
+                                                    {rev.friend?.avatar_url
+                                                      ? <img src={rev.friend.avatar_url} className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                                                      : null}
+                                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 avatar-initials"
+                                                      style={{display: rev.friend?.avatar_url ? 'none' : 'flex', fontSize:'9px'}}>
+                                                      {initials(rev.friend?.name||'?')}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                      <div className="flex items-center gap-2 mb-0.5">
+                                                        <span className="text-xs font-medium" style={{color:'var(--text-primary)'}}>{rev.friend?.name}</span>
+                                                        <StarDisplay value={rev.rating} size={10} />
+                                                      </div>
+                                                      {rev.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{rev.comment}</p>}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                      </div>
+                                    )
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -1402,12 +1490,32 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                     ))}
                                   </div>
                                 )}
+                                {/* Reviews inline for history */}
+                                {(() => {
+                                  const gameReviews = reviews.filter(r => r.game_title.toLowerCase() === g.title.toLowerCase())
+                                  const avgRating = gameReviews.length ? (gameReviews.reduce((s,r)=>s+r.rating,0)/gameReviews.length).toFixed(1) : null
+                                  return avgRating ? (
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      <StarDisplay value={Math.round(avgRating)} size={10} />
+                                      <span className="text-xs" style={{color:'#EF9F27'}}>{avgRating}</span>
+                                      <span className="text-xs" style={{color:'var(--text-muted)'}}>({gameReviews.length})</span>
+                                    </div>
+                                  ) : null
+                                })()}
                               </div>
-                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                                {canEdit(selectedFriend?.id) && <>
-                                  <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5"><Pencil size={12} /></button>
-                                  <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
-                                </>}
+                              <div className="flex flex-col gap-1 items-end">
+                                <button
+                                  onClick={()=>router.push(`/review?game=${encodeURIComponent(g.title+'|||'+(g.cover_url||''))}&from=${selectedFriend.id}`)}
+                                  className="opacity-0 group-hover:opacity-100 text-xs px-2 py-1 rounded-lg border transition-all flex items-center gap-1"
+                                  style={{borderColor:'rgba(127,119,221,0.3)', color:'#7F77DD'}}>
+                                  <Star size={10} /> Reseñar
+                                </button>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                  {canEdit(selectedFriend?.id) && <>
+                                    <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5"><Pencil size={12} /></button>
+                                    <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
+                                  </>}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -1619,12 +1727,16 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       </div>
                     )}
 
-                    {/* Reseñas placeholder */}
+                    {/* Reseñas */}
                     <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
                       <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Reseñas escritas</div>
                       <div className="flex items-center justify-between">
-                        <span className="text-2xl font-semibold text-white">0</span>
-                        <span className="text-xs px-2 py-1 rounded-lg" style={{background:'rgba(127,119,221,0.1)', color:'rgba(127,119,221,0.7)'}}>próximamente</span>
+                        <span className="text-2xl font-semibold text-white">{reviews.filter(r=>r.friend_id===selectedFriend.id).length}</span>
+                        <button onClick={()=>setProfileTab('reviews')}
+                          className="text-xs px-2.5 py-1.5 rounded-lg transition-colors hover:bg-white/5"
+                          style={{color:'var(--text-muted)', border:'1px solid var(--border)'}}>
+                          Ver todas
+                        </button>
                       </div>
                     </div>
 
@@ -1669,19 +1781,75 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 )}
 
                 {/* TAB: Reseñas */}
-                {profileTab==='reviews' && (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{background:'rgba(127,119,221,0.1)', border:'1px solid rgba(127,119,221,0.2)'}}>
-                      <Medal size={24} className="text-purple-400" />
+                {profileTab==='reviews' && (() => {
+                  const userReviews = reviews.filter(r => r.friend_id === selectedFriend.id)
+                    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+                  return (
+                    <div>
+                      {userReviews.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{background:'rgba(239,159,39,0.1)', border:'1px solid rgba(239,159,39,0.2)'}}>
+                            <Star size={24} style={{color:'#EF9F27'}} />
+                          </div>
+                          <div className="text-base font-medium mb-2" style={{color:'var(--text-primary)'}}>Sin reseñas todavía</div>
+                          <div className="text-sm max-w-xs" style={{color:'var(--text-muted)'}}>
+                            {isOwner(selectedFriend?.id)
+                              ? 'Escribí tu primera reseña desde cualquier card de juego o con el botón +'
+                              : `${selectedFriend.name} no ha escrito reseñas todavía.`}
+                          </div>
+                          {isOwner(selectedFriend?.id) && (
+                            <button onClick={()=>router.push(`/review?from=${selectedFriend.id}`)}
+                              className="mt-6 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                              style={{background:'rgba(127,119,221,0.15)', color:'#7F77DD', border:'1px solid rgba(127,119,221,0.3)'}}>
+                              Escribir primera reseña
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {isOwner(selectedFriend?.id) && (
+                            <button onClick={()=>router.push(`/review?from=${selectedFriend.id}`)}
+                              className="w-full py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                              style={{background:'rgba(127,119,221,0.08)', color:'#7F77DD', border:'1px solid rgba(127,119,221,0.2)'}}>
+                              <Star size={14} /> Nueva reseña
+                            </button>
+                          )}
+                          {userReviews.map(rev => (
+                            <div key={rev.id} className="rounded-xl p-4" style={{background:'var(--bg-card)', border:'1px solid var(--border)'}}>
+                              <div className="flex items-start gap-3">
+                                {rev.game_cover
+                                  ? <img src={rev.game_cover} alt={rev.game_title} className="w-10 h-14 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                                  : <div className="w-10 h-14 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'rgba(127,119,221,0.1)'}}>
+                                      <Gamepad2 size={16} style={{color:'#7F77DD'}} />
+                                    </div>
+                                }
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <div className="font-medium text-sm truncate" style={{color:'var(--text-primary)'}}>{rev.game_title}</div>
+                                    {isOwner(selectedFriend?.id) && (
+                                      <div className="flex gap-1 flex-shrink-0">
+                                        <button onClick={()=>router.push(`/review?game=${encodeURIComponent(rev.game_title+'|||'+(rev.game_cover||''))}&from=${selectedFriend.id}`)}
+                                          className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5 transition-colors"><Pencil size={11} /></button>
+                                        <button onClick={async()=>{await fetch(`/api/reviews?id=${rev.id}`,{method:'DELETE'});fetchReviews()}}
+                                          className="text-gray-600 hover:text-red-400 p-1 rounded border border-white/5 transition-colors"><Trash2 size={11} /></button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <StarDisplay value={rev.rating} size={12} />
+                                    <span className="text-xs font-semibold" style={{color:'#EF9F27'}}>{rev.rating}/5</span>
+                                  </div>
+                                  {rev.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-secondary)'}}>{rev.comment}</p>}
+                                  <div className="text-xs mt-2" style={{color:'var(--text-muted)'}}>{fmtDate(rev.created_at)}</div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-base font-medium mb-2" style={{color:'var(--text-primary)'}}>Sin reseñas todavía</div>
-                    <div className="text-sm max-w-xs" style={{color:'var(--text-muted)'}}>
-                      {isOwner(selectedFriend?.id)
-                        ? 'Pronto podrás escribir reseñas de los juegos que hayas jugado.'
-                        : `${selectedFriend.name} no ha escrito reseñas todavía.`}
-                    </div>
-                  </div>
-                )}
+                  )
+                })()}
               </>
             )
           })()}
@@ -2182,6 +2350,15 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
                 <Plus size={15} /> Agregar juego
               </button>
+              <button onClick={()=>{
+                setFabOpen(false)
+                const dest = `/review${selectedFriend ? `?from=${selectedFriend.id}` : ''}`
+                router.push(dest)
+              }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-white/10 shadow-lg transition-all hover:bg-white/10"
+                style={{background:'var(--bg-modal)', border:'1px solid rgba(127,119,221,0.3)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
+                <Star size={15} style={{color:'#EF9F27'}} /> Escribir reseña
+              </button>
               <button onClick={()=>{setFabOpen(false);setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-green-500/20 shadow-lg transition-all hover:bg-green-500/10"
                 style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
@@ -2192,7 +2369,6 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
                 <Gamepad2 size={15} /> Vincular WoW
               </button>
-
             </div>
           )}
           <button onClick={()=>setFabOpen(p=>!p)}
