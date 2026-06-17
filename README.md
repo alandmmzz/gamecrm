@@ -1,63 +1,73 @@
 # 🎮 Game CRM
 
-Seguimiento de juegos con tus amigos. Stack: Next.js + Supabase + Vercel.
+Una app para seguir los juegos de tus amigos. Registrá qué están jugando, cuántas horas llevan, y descubrí patrones entre perfiles.
 
----
+## ¿Qué hace?
 
-## Setup en 10 minutos
+**Perfiles de usuario**
+- Importación automática desde Steam (juegos, horas, logros, fechas)
+- Vinculación con World of Warcraft (personaje, ilvl, raid progress)
+- Rol único generado por IA basado en los géneros más jugados
+- Gráfico radar de géneros jugados
+- Historial ordenado por fecha con estados: En progreso, Completado, Abandonado
 
-### 1. Supabase (base de datos gratis)
+**Insights**
+- Juegos en común entre usuarios
+- El más dedicado por juego compartido
+- Perfiles similares por géneros (con ♥ para alta compatibilidad)
 
-1. Ve a [supabase.com](https://supabase.com) → Create new project
-2. Elige nombre y contraseña, espera que inicialice (~2 min)
-3. Ve a **SQL Editor** → pega todo el contenido de `schema.sql` → Run
-4. Ve a **Settings → API** y copia:
-   - `Project URL` → es tu `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` key → es tu `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+**Descubrir**
+- GameFinder estilo Tinder — recomendaciones personalizadas basadas en tus géneros más jugados + juegos de tus amigos
 
-### 2. Clave de Anthropic (para búsqueda HLTB)
+**Cuenta**
+- Login con GitHub o Google
+- Foto de perfil personalizable
+- Modo claro / oscuro / según el sistema
+- Perfil público — cualquiera puede ver sin registrarse
 
-1. Ve a [console.anthropic.com](https://console.anthropic.com) → API Keys → Create Key
-2. Guarda esa clave, es tu `ANTHROPIC_API_KEY`
+## Stack
 
-### 3. Subir a GitHub
+| Tecnología | Uso |
+|---|---|
+| Next.js 14 | Frontend + API routes |
+| Supabase | Base de datos + Auth + Storage |
+| Vercel | Deploy |
+| Tailwind CSS | Estilos |
+| Lucide React | Iconos |
+| Claude API (Haiku) | HLTB estimado + roles + progreso IA |
+| Steam API | Importación de juegos |
+| RAWG API | Portadas y géneros |
+| Blizzard API | Datos de WoW |
 
-```bash
-cd gamecrm
-git init
-git add .
-git commit -m "init"
-gh repo create gamecrm --public --push
-# o en github.com → New repository → sube los archivos
+## Features
+
+- 📱 Mobile-first con bottom bar estilo iOS
+- 🖥️ Sidebar fijo en desktop
+- 🌙 Modo claro/oscuro con detección del sistema
+- 🔒 Perfiles públicos, edición solo para el dueño
+- 👑 Rol de admin para gestionar todos los perfiles
+- 🔄 Sync automático de portadas, géneros y progreso
+- 🏆 Logros de Steam como métrica de completitud
+
+## Variables de entorno
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+ANTHROPIC_API_KEY=
+RAWG_API_KEY=
+STEAM_API_KEY=
+BLIZZARD_CLIENT_ID=
+BLIZZARD_CLIENT_SECRET=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-### 4. Deploy en Vercel (gratis)
-
-1. Ve a [vercel.com](https://vercel.com) → New Project → importa tu repo
-2. En **Environment Variables** agrega las 3 variables:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL     = https://xxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJhbGc...
-   ANTHROPIC_API_KEY            = sk-ant-...
-   ```
-3. Click Deploy → en ~1 min tienes tu URL pública ✅
-
-### 5. Comparte el link con tus amigos
-
-Cualquiera con el link puede:
-- Agregar amigos
-- Registrar juegos con datos de HowLongToBeat
-- Ver el progreso de todos
-
----
-
-## Desarrollo local
+## Deploy
 
 ```bash
-cp .env.example .env.local
-# llena .env.local con tus claves
-
+git clone https://github.com/alandmmzz/gamecrm.git
+cd gamecrm
 npm install
+# Configurar variables de entorno
 npm run dev
-# abre http://localhost:3000
 ```
