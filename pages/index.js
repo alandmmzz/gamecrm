@@ -1467,7 +1467,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Historial</div>
                         <div className="space-y-2">
                           {history.map(g=>(
-                            <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
+                            <div key={g.id} className="group flex items-start gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
                               {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
