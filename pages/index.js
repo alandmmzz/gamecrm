@@ -341,6 +341,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [generatedRole, setGeneratedRole] = useState(null)
   const [adminView, setAdminView] = useState(true)
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
+  const [profileTab, setProfileTab] = useState('games') // 'games' | 'stats' | 'reviews' | 'activity'
 
   // Friend form
   const [fName, setFName] = useState('')
@@ -945,7 +946,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {/* User section at bottom */}
           <div className="mt-auto pt-4 border-t" style={{borderColor:'var(--border)'}}>
             {session ? (
-              <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile');window.scrollTo({top:0,behavior:'smooth'})}}}>
+              <div className="flex items-center gap-2 px-1 cursor-pointer group" onClick={()=>{if(myProfile){setSelected(myProfile.id);setView('profile');setProfileTab('games');window.scrollTo({top:0,behavior:'smooth'})}}}>
 
                 {(myProfile?.avatar_url || session.user.user_metadata?.avatar_url)
                   ? <img src={myProfile?.avatar_url || session.user.user_metadata?.avatar_url} className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
@@ -1043,7 +1044,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   const actives = f.games?.filter(g=>g.status==='playing')||[]
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
                   return (
-                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');window.scrollTo({top:0,behavior:'smooth'})}}
+                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');setProfileTab('games');window.scrollTo({top:0,behavior:'smooth'})}}
                       className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
@@ -1093,17 +1094,44 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           {/* Profile view */}
           {view==='profile' && selectedFriend && (() => {
             const idx = friends.findIndex(f=>f.id===selected)
-            const color = COLOR_MAP[COLORS[idx%COLORS.length]]
             const totalH = (selectedFriend.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
+
+            // Stats computed values
+            const statuses = [
+              { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300', dot: '#7F77DD' },
+              { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300',   dot: '#5DCAA5' },
+              { label: 'Abandonados', key: 'dropped',   color: 'bg-red-500/70', badge: 'text-red-300',    dot: '#E07B6A' },
+            ]
+            const totalGames = (selectedFriend.games||[]).length
+            const completedGames = (selectedFriend.games||[]).filter(g=>g.status==='completed')
+            const avgCompletion = completedGames.length
+              ? Math.round(completedGames.reduce((s,g)=>s+(g.pct||0),0)/completedGames.length)
+              : 0
+            const topGame = [...(selectedFriend.games||[])].sort((a,b)=>(b.hours_played||0)-(a.hours_played||0))[0]
+
+            // Profile activity (this friend's games sorted by last activity)
+            const profileActivity = [...(selectedFriend.games||[])].sort((a,b)=>{
+              const da = new Date(b.last_played_at||b.finished_at||b.started_at||b.created_at||0).getTime()
+              const db = new Date(a.last_played_at||a.finished_at||a.started_at||a.created_at||0).getTime()
+              return da - db
+            })
+
+            const PROFILE_TABS = [
+              { id: 'games',    label: 'Juegos' },
+              { id: 'stats',    label: 'Stats' },
+              { id: 'activity', label: 'Actividad' },
+              { id: 'reviews',  label: 'Reseñas' },
+            ]
+
             return (
               <>
-              <div className="flex gap-6 items-start">
-                <div className="flex-1 min-w-0">
-                {/* Back + profile header */}
+                {/* Back button */}
                 <button onClick={()=>{setView('list');setSelected(null)}} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
                   ‹ Volver
                 </button>
-                <div className="flex items-center gap-4 mb-8">
+
+                {/* Profile header — always visible */}
+                <div className="flex items-center gap-4 mb-6">
                   {selectedFriend.avatar_url
                     ? <img src={selectedFriend.avatar_url} className="w-16 h-16 rounded-full object-cover flex-shrink-0"
                         onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
@@ -1112,21 +1140,19 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     style={{display: selectedFriend.avatar_url ? 'none' : 'flex'}}>
                     {initials(selectedFriend.name)}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {selectedFriend.steam_id && (
-                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}><Gamepad2 size={11} /> Steam</span>
-                        )}
-                        {selectedFriend.wow_character && (
-                          <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', color:'rgb(245,158,11)'}}>⚔️ {selectedFriend.wow_character}</span>
-                        )}
-                        {!selectedFriend.steam_id && !selectedFriend.wow_character && (
-                          <span className="text-xs" style={{color:'var(--text-muted)'}}>Sin servicios vinculados</span>
-                        )}
-                      </div>
-                      <span className="text-xs" style={{color:'var(--text-muted)'}}>{selectedFriend.games?.length||0} juegos · {Math.round(totalH)}h</span>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {selectedFriend.steam_id && (
+                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}><Gamepad2 size={11} /> Steam</span>
+                      )}
+                      {selectedFriend.wow_character && (
+                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', color:'rgb(245,158,11)'}}>⚔️ {selectedFriend.wow_character}</span>
+                      )}
+                      {!selectedFriend.steam_id && !selectedFriend.wow_character && (
+                        <span className="text-xs" style={{color:'var(--text-muted)'}}>Sin servicios vinculados</span>
+                      )}
+                      <span className="text-xs" style={{color:'var(--text-muted)'}}>{totalGames} juegos · {Math.round(totalH)}h</span>
                     </div>
                     {selectedFriend.role_title && (
                       <div className="flex items-center gap-1.5 mt-1.5">
@@ -1136,14 +1162,14 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     )}
                   </div>
                   {canEdit(selectedFriend?.id) && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                       <button onClick={refreshCovers} disabled={refreshing} title="Actualizar información"
-                        className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
+                        className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all disabled:opacity-50">
                         <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                       </button>
                       {isAdmin && adminView && !isOwner(selectedFriend?.id) && (
                         <button onClick={()=>deleteFriend(selectedFriend.id)} title="Eliminar usuario"
-                          className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all">
+                          className="w-9 h-9 flex items-center justify-center rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-all">
                           <Trash2 size={16} />
                         </button>
                       )}
@@ -1151,211 +1177,273 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   )}
                 </div>
 
-                {/* Recurring games badges */}
-                {recurringGames.length>0 && (
-                  <div className="mb-6">
-                    <div className="text-xs font-medium uppercase tracking-wider mb-2">Juegos recurrentes</div>
-                    <div className="flex flex-wrap gap-2">
-                      {recurringGames.map(g=>(
-                        <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-card-hover)"}}>
-                          {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                          <span className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</span>
-                          <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            {canEdit(selectedFriend?.id) && <>
-                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400"><Pencil size={13} /></button>
-                              <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
-                            </>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Profile tabs */}
+                <div className="flex gap-1 mb-6 border-b border-white/5 pb-0">
+                  {PROFILE_TABS.map(tab => (
+                    <button key={tab.id} onClick={()=>setProfileTab(tab.id)}
+                      className="px-4 py-2 text-sm font-medium transition-all relative"
+                      style={{
+                        color: profileTab===tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
+                      }}>
+                      {tab.label}
+                      {profileTab===tab.id && (
+                        <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full" style={{background:'#7F77DD'}} />
+                      )}
+                    </button>
+                  ))}
+                </div>
 
-                {/* Active games */}
-                {activeGames.length>0 && (
-                  <>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-xs font-medium uppercase tracking-wider">En progreso</div>
-                      <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
-                        <button onClick={()=>setSortOrder('hours')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='hours'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Horas</button>
-                        <button onClick={()=>setSortOrder('alpha')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='alpha'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>A–Z</button>
-                        <button onClick={()=>setSortOrder('date')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='date'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Recientes</button>
+                {/* TAB: Juegos */}
+                {profileTab==='games' && (
+                  <div>
+                    {/* Recurring games badges */}
+                    {recurringGames.length>0 && (
+                      <div className="mb-6">
+                        <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{color:'var(--text-muted)'}}>Juegos recurrentes</div>
+                        <div className="flex flex-wrap gap-2">
+                          {recurringGames.map(g=>(
+                            <div key={g.id} className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 hover:border-white/20 transition-colors" style={{background:"var(--bg-card-hover)"}}>
+                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-5 h-7 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                              <span className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</span>
+                              <span className="text-xs" style={{color:'var(--text-muted)'}}>{g.hours_played}h</span>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                {canEdit(selectedFriend?.id) && <>
+                                  <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400"><Pencil size={13} /></button>
+                                  <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs">✕</button>
+                                </>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-3 mb-8">
-                      {activeGames.map(g=>(
-                        <div key={g.id} className="rounded-xl p-4"  style={{background:"var(--bg-card)"}}>
-                          <div className="flex gap-3">
-                            {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
-                                <div className="flex gap-1 flex-shrink-0">
-                                  {canEdit(selectedFriend?.id) && <>
-                                    <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 p-1 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors"><Sparkles size={12} /></button>
-                                    <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5 hover:border-white/10 transition-colors"><Pencil size={12} /></button>
-                                    <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
-                                  </>}
-                                </div>
-                              </div>
-                              {(g.last_played_at||g.started_at) && <div className="text-xs text-gray-600 mb-2">Último juego {fmtDate(g.last_played_at||g.started_at)}</div>}
-                              {g.genres?.length>0 && (
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {g.genres.map(genre=>(
-                                    <span key={genre} className="text-xs px-2 py-0.5 rounded-full" style={{border:'1px solid var(--tag-border)',color:'var(--text-muted)',background:'var(--tag-bg)'}}>{genre}</span>
-                                  ))}
-                                </div>
-                              )}
-                              {g.description && (
-                                <div className="mb-2">
-                                  <button onClick={()=>setExpandedDescs(p=>({...p,[g.id]:!p[g.id]}))} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 transition-colors">
-                                    {expandedDescs[g.id]?'▾':'▸'} descripción
-                                  </button>
-                                  {expandedDescs[g.id] && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{g.description}</p>}
-                                </div>
-                              )}
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
-                                {[
-                                  ['Horas jugadas', `${g.hours_played}h`],
-                                  !g.no_progress && g.hltb_main && ['Historia (HLTB)', `${g.hltb_main}h`],
-                                  !g.no_progress && g.hltb_main && ['Restantes', `~${Math.max(0,g.hltb_main-g.hours_played).toFixed(0)}h`],
-                                ].filter(Boolean).map(([label,val])=>(
-                                  <div key={label} className="flex justify-between">
-                                    <span className="text-gray-500">{label}</span>
-                                    <span className={label==='Restantes'?'text-purple-400 font-medium':'text-gray-300'}>{val}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              {!g.no_progress && (g.pct > 0 || g.hltb_main) && (
-                                <>
-                                  <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct||0}%</span></div>
-                                  <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                                    <div className={`h-full rounded-full ${progressColor(g.pct||0)}`} style={{width:`${g.pct||0}%`}}></div>
-                                  </div>
-                                </>
-                              )}
-                            </div>
+                    )}
+
+                    {/* Active games */}
+                    {activeGames.length>0 && (
+                      <>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-xs font-medium uppercase tracking-wider" style={{color:'var(--text-muted)'}}>En progreso</div>
+                          <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
+                            <button onClick={()=>setSortOrder('hours')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='hours'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Horas</button>
+                            <button onClick={()=>setSortOrder('alpha')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='alpha'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>A–Z</button>
+                            <button onClick={()=>setSortOrder('date')} className={`text-xs px-2 py-1 rounded-md transition-colors ${sortOrder==='date'?'bg-white/10 text-white':'text-gray-500 hover:text-gray-300'}`}>Recientes</button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* History */}
-                {history.length>0 && (
-                  <>
-                    <div className="text-xs font-medium uppercase tracking-wider mb-3">Historial</div>
-                    <div className="space-y-2">
-                      {history.map(g=>(
-                        <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
-                          {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm text-gray-200">{g.title}</span>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
-                            </div>
-                            <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
-                              {g.hours_played}h
-                              {(()=>{
-                                const lp = g.last_played_at||g.started_at
-                                const fin = g.finished_at
-                                if (lp) return ` · últ. vez ${fmtDate(lp)}`
-                                if (fin) return ` · fin ${fmtDate(fin)}`
-                                return ''
-                              })()}
-                            </div>
-                            {g.genres?.length>0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {g.genres.map(genre=>(
-                                  <span key={genre} className="text-xs px-1.5 py-0.5 rounded-full border border-white/10 text-gray-600">{genre}</span>
-                                ))}
+                        <div className="space-y-3 mb-8">
+                          {activeGames.map(g=>(
+                            <div key={g.id} className="rounded-xl p-4" style={{background:"var(--bg-card)"}}>
+                              <div className="flex gap-3">
+                                {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-14 h-20 rounded-lg object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <div className="font-medium" style={{color:'var(--text-primary)'}}>{g.title}</div>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      {canEdit(selectedFriend?.id) && <>
+                                        <button onClick={()=>openEstimate(g)} title="Estimar con IA" className="text-purple-400 hover:text-purple-300 p-1 rounded border border-purple-500/20 hover:border-purple-500/40 transition-colors"><Sparkles size={12} /></button>
+                                        <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5 hover:border-white/10 transition-colors"><Pencil size={12} /></button>
+                                        <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5 hover:border-red-500/20 transition-colors">✕</button>
+                                      </>}
+                                    </div>
+                                  </div>
+                                  {(g.last_played_at||g.started_at) && <div className="text-xs text-gray-600 mb-2">Último juego {fmtDate(g.last_played_at||g.started_at)}</div>}
+                                  {g.genres?.length>0 && (
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {g.genres.map(genre=>(
+                                        <span key={genre} className="text-xs px-2 py-0.5 rounded-full" style={{border:'1px solid var(--tag-border)',color:'var(--text-muted)',background:'var(--tag-bg)'}}>{genre}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {g.description && (
+                                    <div className="mb-2">
+                                      <button onClick={()=>setExpandedDescs(p=>({...p,[g.id]:!p[g.id]}))} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1 transition-colors">
+                                        {expandedDescs[g.id]?'▾':'▸'} descripción
+                                      </button>
+                                      {expandedDescs[g.id] && <p className="text-xs text-gray-400 mt-1 leading-relaxed">{g.description}</p>}
+                                    </div>
+                                  )}
+                                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                                    {[
+                                      ['Horas jugadas', `${g.hours_played}h`],
+                                      !g.no_progress && g.hltb_main && ['Historia (HLTB)', `${g.hltb_main}h`],
+                                      !g.no_progress && g.hltb_main && ['Restantes', `~${Math.max(0,g.hltb_main-g.hours_played).toFixed(0)}h`],
+                                    ].filter(Boolean).map(([label,val])=>(
+                                      <div key={label} className="flex justify-between">
+                                        <span className="text-gray-500">{label}</span>
+                                        <span className={label==='Restantes'?'text-purple-400 font-medium':'text-gray-300'}>{val}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {!g.no_progress && (g.pct > 0 || g.hltb_main) && (
+                                    <>
+                                      <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Completitud</span><span>{g.pct||0}%</span></div>
+                                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                                        <div className={`h-full rounded-full ${progressColor(g.pct||0)}`} style={{width:`${g.pct||0}%`}}></div>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            {canEdit(selectedFriend?.id) && <>
-                              <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5"><Pencil size={12} /></button>
-                              <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
-                            </>}
-                          </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </>
+                      </>
+                    )}
+
+                    {/* History */}
+                    {history.length>0 && (
+                      <>
+                        <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>Historial</div>
+                        <div className="space-y-2">
+                          {history.map(g=>(
+                            <div key={g.id} className="group flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors" style={{background:"var(--bg-card)"}}>
+                              {g.cover_url && <img src={g.cover_url} alt={g.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm text-gray-200">{g.title}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
+                                </div>
+                                <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
+                                  {g.hours_played}h
+                                  {(()=>{
+                                    const lp = g.last_played_at||g.started_at
+                                    const fin = g.finished_at
+                                    if (lp) return ` · últ. vez ${fmtDate(lp)}`
+                                    if (fin) return ` · fin ${fmtDate(fin)}`
+                                    return ''
+                                  })()}
+                                </div>
+                                {g.genres?.length>0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {g.genres.map(genre=>(
+                                      <span key={genre} className="text-xs px-1.5 py-0.5 rounded-full border border-white/10 text-gray-600">{genre}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                {canEdit(selectedFriend?.id) && <>
+                                  <button onClick={()=>openEditGame(g)} className="text-gray-600 hover:text-gray-400 p-1 rounded border border-white/5"><Pencil size={12} /></button>
+                                  <button onClick={()=>deleteGame(g.id)} className="text-gray-600 hover:text-red-400 text-xs px-1.5 py-0.5 rounded border border-white/5">✕</button>
+                                </>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {(!activeGames.length && !history.length && !recurringGames.length) && (
+                      <div className="text-center py-16 text-gray-500">Sin juegos registrados aún.</div>
+                    )}
+                  </div>
                 )}
 
-                {(!activeGames.length && !history.length) && (
-                  <div className="text-center py-16 text-gray-500">Sin juegos registrados aún.</div>
-                )}
-                </div>{/* end main col */}
-
-                {/* Chart sidebar — desktop only */}
-                <div className="hidden md:block w-64 flex-shrink-0 sticky top-8" style={{maxHeight:'calc(100vh - 64px)', overflowY:'auto', scrollbarWidth:'none'}}>
-                  <div className="rounded-xl p-4"  style={{background:"var(--bg-card)"}}>
-                    <div className="text-xs font-medium uppercase tracking-wider mb-4">Géneros jugados</div>
-                    <GenreRadarChart games={selectedFriend?.games||[]} />
-                    <div className="mt-5 pt-4 border-t border-white/5">
-                      <div className="text-xs font-medium uppercase tracking-wider mb-3">Resumen</div>
+                {/* TAB: Stats */}
+                {profileTab==='stats' && (
+                  <div>
+                    {/* Quick numbers row */}
+                    <div className="grid grid-cols-3 gap-3 mb-6">
                       {[
-                        { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300' },
-                        { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300' },
-                        { label: 'Abandonados', key: 'dropped',   color: 'bg-red-500/70', badge: 'text-red-300' },
-                      ].map(({ label, key, color, badge }) => {
-                        const count = (selectedFriend?.games||[]).filter(g => g.status === key).length
-                        const total = (selectedFriend?.games||[]).length
-                        const pct = total ? Math.round((count/total)*100) : 0
-                        return (
-                          <div key={key} className="mb-2.5">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="text-gray-500">{label}</span>
-                              <span className={badge}>{count} <span className="text-gray-600">({pct}%)</span></span>
+                        { label: 'Juegos totales', value: totalGames },
+                        { label: 'Horas jugadas', value: `${Math.round(totalH)}h` },
+                        { label: 'Completitud media', value: completedGames.length ? `${avgCompletion}%` : '—' },
+                      ].map(({label, value}) => (
+                        <div key={label} className="rounded-xl p-4 text-center" style={{background:'var(--bg-card)'}}>
+                          <div className="text-xl font-semibold text-white mb-1">{value}</div>
+                          <div className="text-xs" style={{color:'var(--text-muted)'}}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Status breakdown */}
+                    <div className="rounded-xl p-4 mb-4" style={{background:'var(--bg-card)'}}>
+                      <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Distribución por estado</div>
+                      <div className="space-y-3">
+                        {statuses.map(({ label, key, color, badge, dot }) => {
+                          const count = (selectedFriend?.games||[]).filter(g => g.status === key).length
+                          const pct = totalGames ? Math.round((count/totalGames)*100) : 0
+                          return (
+                            <div key={key}>
+                              <div className="flex justify-between text-xs mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{background:dot}}></span>
+                                  <span style={{color:'var(--text-secondary)'}}>{label}</span>
+                                </div>
+                                <span className={badge}>{count} <span className="text-gray-600">({pct}%)</span></span>
+                              </div>
+                              <div className="h-2 rounded-full overflow-hidden" style={{background:'var(--border)'}}>
+                                <div className={`h-full rounded-full transition-all ${color}`} style={{width:`${pct}%`}}></div>
+                              </div>
                             </div>
-                            <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                              <div className={`h-full rounded-full transition-all ${color}`} style={{width:`${pct}%`}}></div>
-                            </div>
+                          )
+                        })}
+                      </div>
+                      {topGame && (
+                        <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-3">
+                          {topGame.cover_url && <img src={topGame.cover_url} alt={topGame.title} className="w-8 h-11 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs mb-0.5" style={{color:'var(--text-muted)'}}>Juego más jugado</div>
+                            <div className="text-sm font-medium truncate" style={{color:'var(--text-primary)'}}>{topGame.title}</div>
                           </div>
-                        )
-                      })}
+                          <div className="text-sm font-semibold text-purple-400 flex-shrink-0">{topGame.hours_played}h</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Genre radar */}
+                    <div className="rounded-xl p-4" style={{background:'var(--bg-card)'}}>
+                      <div className="text-xs font-medium uppercase tracking-wider mb-4" style={{color:'var(--text-muted)'}}>Géneros jugados</div>
+                      <GenreRadarChart games={selectedFriend?.games||[]} />
                     </div>
                   </div>
-                </div>
+                )}
 
-              </div>
-
-              {/* Chart mobile — below games */}
-              <div className="md:hidden mt-6">
-                <div className="rounded-xl p-4"  style={{background:"var(--bg-card)"}}>
-                  <div className="text-xs font-medium uppercase tracking-wider mb-4">Géneros jugados</div>
-                  <GenreRadarChart games={selectedFriend?.games||[]} />
-                    <div className="mt-5 pt-4 border-t border-white/5">
-                      <div className="text-xs font-medium uppercase tracking-wider mb-3">Resumen</div>
-                      {[
-                        { label: 'En progreso', key: 'playing',   color: 'bg-purple-500', badge: 'text-purple-300' },
-                        { label: 'Completados', key: 'completed', color: 'bg-teal-500',   badge: 'text-teal-300' },
-                        { label: 'Abandonados', key: 'dropped',   color: 'bg-red-500/70', badge: 'text-red-300' },
-                      ].map(({ label, key, color, badge }) => {
-                        const count = (selectedFriend?.games||[]).filter(g => g.status === key).length
-                        const total = (selectedFriend?.games||[]).length
-                        const pct = total ? Math.round((count/total)*100) : 0
-                        return (
-                          <div key={key} className="mb-2.5">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="text-gray-500">{label}</span>
-                              <span className={badge}>{count} <span className="text-gray-600">({pct}%)</span></span>
+                {/* TAB: Actividad */}
+                {profileTab==='activity' && (
+                  <div className="space-y-2">
+                    {profileActivity.length === 0
+                      ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
+                      : profileActivity.map(g => (
+                          <div key={g.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                            {g.cover_url
+                              ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                              : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(selectedFriend.name)}</div>
+                            }
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm" style={{color:'var(--text-secondary)'}}>{g.title}</div>
+                              <div className="text-xs" style={{color:'var(--text-muted)'}}>
+                                {g.hours_played}h
+                                {(()=>{
+                                  const lp = g.last_played_at||g.started_at
+                                  const fin = g.finished_at
+                                  if (lp) return ` · últ. vez ${fmtDate(lp)}`
+                                  if (fin) return ` · fin ${fmtDate(fin)}`
+                                  return ''
+                                })()}
+                              </div>
                             </div>
-                            <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                              <div className={`h-full rounded-full transition-all ${color}`} style={{width:`${pct}%`}}></div>
-                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
                           </div>
-                        )
-                      })}
+                        ))
+                    }
+                  </div>
+                )}
+
+                {/* TAB: Reseñas */}
+                {profileTab==='reviews' && (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{background:'rgba(127,119,221,0.1)', border:'1px solid rgba(127,119,221,0.2)'}}>
+                      <Medal size={24} className="text-purple-400" />
                     </div>
-                </div>
-              </div>
-            </>
+                    <div className="text-base font-medium mb-2" style={{color:'var(--text-primary)'}}>Sin reseñas todavía</div>
+                    <div className="text-sm max-w-xs" style={{color:'var(--text-muted)'}}>
+                      {isOwner(selectedFriend?.id)
+                        ? 'Pronto podrás escribir reseñas de los juegos que hayas jugado.'
+                        : `${selectedFriend.name} no ha escrito reseñas todavía.`}
+                    </div>
+                  </div>
+                )}
+              </>
             )
           })()}
 
