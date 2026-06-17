@@ -25,6 +25,45 @@ function StarDisplay({ value, size = 12 }) {
   )
 }
 
+function LikeButtons({ review, myProfileId, onUpdate }) {
+  const likes = (review.review_likes || []).filter(l => l.type === 'like')
+  const dislikes = (review.review_likes || []).filter(l => l.type === 'dislike')
+  const myLike = (review.review_likes || []).find(l => l.friend_id === myProfileId)
+
+  const toggle = async (type) => {
+    if (!myProfileId) return
+    await fetch('/api/likes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ review_id: review.id, friend_id: myProfileId, type })
+    })
+    if (onUpdate) onUpdate()
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <button onClick={() => toggle('like')}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all"
+        style={{
+          background: myLike?.type === 'like' ? 'rgba(93,202,165,0.15)' : 'transparent',
+          border: `1px solid ${myLike?.type === 'like' ? 'rgba(93,202,165,0.4)' : 'var(--border)'}`,
+          color: myLike?.type === 'like' ? '#5DCAA5' : 'var(--text-muted)',
+        }}>
+        👍 {likes.length > 0 && <span>{likes.length}</span>}
+      </button>
+      <button onClick={() => toggle('dislike')}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all"
+        style={{
+          background: myLike?.type === 'dislike' ? 'rgba(224,123,106,0.15)' : 'transparent',
+          border: `1px solid ${myLike?.type === 'dislike' ? 'rgba(224,123,106,0.4)' : 'var(--border)'}`,
+          color: myLike?.type === 'dislike' ? '#E07B6A' : 'var(--text-muted)',
+        }}>
+        👎 {dislikes.length > 0 && <span>{dislikes.length}</span>}
+      </button>
+    </div>
+  )
+}
+
 
 const GENRE_COLORS = [
   '#7F77DD','#5DCAA5','#EF9F27','#E07B6A','#5B9BD5',
@@ -1443,6 +1482,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                                         {rev.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
                                                       </div>
                                                       {rev.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{rev.comment}</p>}
+                                                      <LikeButtons review={rev} myProfileId={myProfile?.id} onUpdate={fetchReviews} />
                                                     </div>
                                                   </div>
                                                 ))}
@@ -1531,6 +1571,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                                   {rev.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
                                                 </div>
                                                 {rev.comment && <p className="text-xs mt-0.5 leading-relaxed" style={{color:'var(--text-muted)'}}>{rev.comment}</p>}
+                                                <LikeButtons review={rev} myProfileId={myProfile?.id} onUpdate={fetchReviews} />
                                               </div>
                                             </div>
                                           ))}
@@ -1932,7 +1973,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                     )}
                                   </div>
                                   {rev.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-secondary)'}}>{rev.comment}</p>}
-                                  <div className="text-xs mt-2" style={{color:'var(--text-muted)'}}>{fmtDate(rev.created_at)}</div>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <LikeButtons review={rev} myProfileId={myProfile?.id} onUpdate={fetchReviews} />
+                                    <div className="text-xs" style={{color:'var(--text-muted)'}}>{fmtDate(rev.created_at)}</div>
+                                  </div>
                                 </div>
                               </div>
                             </div>

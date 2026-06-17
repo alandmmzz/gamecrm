@@ -21,6 +21,45 @@ function StarDisplay({ value, size = 12 }) {
   )
 }
 
+function LikeButtons({ review, myProfileId, onUpdate }) {
+  const likes = (review.review_likes || []).filter(l => l.type === 'like')
+  const dislikes = (review.review_likes || []).filter(l => l.type === 'dislike')
+  const myLike = (review.review_likes || []).find(l => l.friend_id === myProfileId)
+
+  const toggle = async (type) => {
+    if (!myProfileId) return
+    await fetch('/api/likes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ review_id: review.id, friend_id: myProfileId, type })
+    })
+    if (onUpdate) onUpdate()
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <button onClick={() => toggle('like')}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all"
+        style={{
+          background: myLike?.type === 'like' ? 'rgba(93,202,165,0.15)' : 'transparent',
+          border: `1px solid ${myLike?.type === 'like' ? 'rgba(93,202,165,0.4)' : 'var(--border)'}`,
+          color: myLike?.type === 'like' ? '#5DCAA5' : 'var(--text-muted)',
+        }}>
+        👍 {likes.length > 0 && <span>{likes.length}</span>}
+      </button>
+      <button onClick={() => toggle('dislike')}
+        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all"
+        style={{
+          background: myLike?.type === 'dislike' ? 'rgba(224,123,106,0.15)' : 'transparent',
+          border: `1px solid ${myLike?.type === 'dislike' ? 'rgba(224,123,106,0.4)' : 'var(--border)'}`,
+          color: myLike?.type === 'dislike' ? '#E07B6A' : 'var(--text-muted)',
+        }}>
+        👎 {dislikes.length > 0 && <span>{dislikes.length}</span>}
+      </button>
+    </div>
+  )
+}
+
 const gameBadge = (s) => s==='playing'?'game-badge-playing':s==='completed'?'game-badge-completed':'game-badge-dropped'
 const gameLabel = (s) => s==='playing'?'Jugando':s==='completed'?'Completado':'Abandonado'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-CL') : null
@@ -63,7 +102,6 @@ export default function GamePage() {
       setDetail(detailData)
       setReviews(Array.isArray(reviewsData) ? reviewsData : [])
       setFriends(Array.isArray(friendsData) ? friendsData : [])
-      // Pick best HLTB match
       const hltbMatch = Array.isArray(hltbData)
         ? hltbData.find(h => h.title.toLowerCase() === title.toLowerCase()) || hltbData[0]
         : null
@@ -71,6 +109,14 @@ export default function GamePage() {
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [title])
+
+  const fetchReviews = () => {
+    if (!title) return
+    fetch(`/api/reviews?game_title=${encodeURIComponent(title)}`)
+      .then(r => r.json())
+      .then(data => setReviews(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }
 
   // Friends who have this game
   const friendsWithGame = friends.map(f => {
@@ -345,7 +391,10 @@ export default function GamePage() {
                       {rev.comment && (
                         <p className="text-sm leading-relaxed" style={{color:'var(--text-secondary)'}}>{rev.comment}</p>
                       )}
-                      <div className="text-xs mt-1.5" style={{color:'var(--text-muted)', opacity:0.6}}>{fmtDate(rev.created_at)}</div>
+                      <div className="flex items-center justify-between">
+                        <LikeButtons review={rev} myProfileId={myProfile?.id} onUpdate={fetchReviews} />
+                        <div className="text-xs mt-1.5" style={{color:'var(--text-muted)', opacity:0.6}}>{fmtDate(rev.created_at)}</div>
+                      </div>
                     </div>
                   </div>
                 ))}

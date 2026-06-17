@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const { game_title } = req.query
     let query = supabase
       .from('reviews')
-      .select('*, friend:friends(id, name, avatar_url)')
+      .select('*, friend:friends(id, name, avatar_url), review_likes(id, friend_id, type)')
       .order('created_at', { ascending: false })
 
     if (game_title) {
