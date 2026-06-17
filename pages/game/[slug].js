@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
-import { ChevronLeft, Star, Clock, ExternalLink, Gamepad2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronLeft, Star, Clock, ExternalLink, Gamepad2, ChevronDown, ChevronUp, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { getProfile } from '../../lib/auth'
 
@@ -45,7 +45,7 @@ function LikeButtons({ review, myProfileId, onUpdate }) {
           border: `1px solid ${myLike?.type === 'like' ? 'rgba(93,202,165,0.4)' : 'var(--border)'}`,
           color: myLike?.type === 'like' ? '#5DCAA5' : 'var(--text-muted)',
         }}>
-        👍 {likes.length > 0 && <span>{likes.length}</span>}
+        <ThumbsUp size={11} /> {likes.length > 0 && <span>{likes.length}</span>}
       </button>
       <button onClick={() => toggle('dislike')}
         className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all"
@@ -54,7 +54,7 @@ function LikeButtons({ review, myProfileId, onUpdate }) {
           border: `1px solid ${myLike?.type === 'dislike' ? 'rgba(224,123,106,0.4)' : 'var(--border)'}`,
           color: myLike?.type === 'dislike' ? '#E07B6A' : 'var(--text-muted)',
         }}>
-        👎 {dislikes.length > 0 && <span>{dislikes.length}</span>}
+        <ThumbsDown size={11} /> {dislikes.length > 0 && <span>{dislikes.length}</span>}
       </button>
     </div>
   )

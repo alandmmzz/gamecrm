@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal, Star, MessageSquare } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal, Star, MessageSquare, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -49,7 +49,7 @@ function LikeButtons({ review, myProfileId, onUpdate }) {
           border: `1px solid ${myLike?.type === 'like' ? 'rgba(93,202,165,0.4)' : 'var(--border)'}`,
           color: myLike?.type === 'like' ? '#5DCAA5' : 'var(--text-muted)',
         }}>
-        👍 {likes.length > 0 && <span>{likes.length}</span>}
+        <ThumbsUp size={11} /> {likes.length > 0 && <span>{likes.length}</span>}
       </button>
       <button onClick={() => toggle('dislike')}
         className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs transition-all"
@@ -58,7 +58,7 @@ function LikeButtons({ review, myProfileId, onUpdate }) {
           border: `1px solid ${myLike?.type === 'dislike' ? 'rgba(224,123,106,0.4)' : 'var(--border)'}`,
           color: myLike?.type === 'dislike' ? '#E07B6A' : 'var(--text-muted)',
         }}>
-        👎 {dislikes.length > 0 && <span>{dislikes.length}</span>}
+        <ThumbsDown size={11} /> {dislikes.length > 0 && <span>{dislikes.length}</span>}
       </button>
     </div>
   )
