@@ -56,6 +56,7 @@ export default function ReviewPage() {
   // Review fields
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
+  const [noApto, setNoApto] = useState(false)
 
   // Existing review for this user+game
   const [existingReview, setExistingReview] = useState(null)
@@ -95,10 +96,12 @@ export default function ReviewPage() {
           setExistingReview(mine)
           setRating(mine.rating)
           setComment(mine.comment || '')
+          setNoApto(mine.no_apto_angelitos || false)
         } else {
           setExistingReview(null)
           setRating(0)
           setComment('')
+          setNoApto(false)
         }
       })
       .catch(() => {})
@@ -154,6 +157,7 @@ export default function ReviewPage() {
           game_cover: selectedGame.cover_url || null,
           rating,
           comment: comment.trim() || null,
+          no_apto_angelitos: noApto,
         })
       })
       setSaved(true)
@@ -322,6 +326,37 @@ export default function ReviewPage() {
                   {comment.length}/500
                 </div>
               </div>
+
+              {/* No apto para angelitos */}
+              <label className="flex items-start gap-3 p-4 rounded-2xl cursor-pointer transition-all"
+                style={{
+                  background: noApto ? 'rgba(239,68,68,0.08)' : 'var(--bg-card)',
+                  border: noApto ? '1px solid rgba(239,68,68,0.25)' : '1px solid var(--border)',
+                }}>
+                <div className="relative flex-shrink-0 mt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={noApto}
+                    onChange={e => setNoApto(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className="w-5 h-5 rounded-md flex items-center justify-center transition-all"
+                    style={{
+                      background: noApto ? '#EF4444' : 'var(--bg-input)',
+                      border: noApto ? '1px solid #EF4444' : '1px solid var(--border-input)',
+                    }}>
+                    {noApto && <span className="text-white text-xs font-bold">✓</span>}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium" style={{color: noApto ? '#FCA5A5' : 'var(--text-primary)'}}>
+                    😇 No apto para angelitos
+                  </div>
+                  <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>
+                    Este juego requiere habilidades motrices básicas considerables
+                  </div>
+                </div>
+              </label>
 
               {/* Save button */}
               <button

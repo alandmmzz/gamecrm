@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
   // POST /api/reviews — create or update (upsert by friend_id + game_title)
   if (req.method === 'POST') {
-    const { friend_id, game_title, game_cover, rating, comment } = req.body
+    const { friend_id, game_title, game_cover, rating, comment, no_apto_angelitos } = req.body
     if (!friend_id || !game_title || !rating) {
       return res.status(400).json({ error: 'friend_id, game_title and rating required' })
     }
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('reviews')
       .upsert(
-        { friend_id, game_title, game_cover: game_cover || null, rating, comment: comment || null },
+        { friend_id, game_title, game_cover: game_cover || null, rating, comment: comment || null, no_apto_angelitos: no_apto_angelitos || false },
         { onConflict: 'friend_id,game_title' }
       )
       .select('*, friend:friends(id, name, avatar_url)')

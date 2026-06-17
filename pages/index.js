@@ -1405,7 +1405,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                         <div className="flex items-center justify-between gap-2">
                                           <div className="flex items-center gap-2">
                                             {avgRating
-                                              ? <><StarDisplay value={Math.round(avgRating)} size={11} /><span className="text-xs font-medium" style={{color:'#EF9F27'}}>{avgRating}</span><span className="text-xs" style={{color:'var(--text-muted)'}}>({gameReviews.length})</span></>
+                                              ? <><StarDisplay value={Math.round(avgRating)} size={11} /><span className="text-xs font-medium" style={{color:'#EF9F27'}}>{avgRating}</span><span className="text-xs" style={{color:'var(--text-muted)'}}>({gameReviews.length})</span>{gameReviews.some(r=>r.no_apto_angelitos) && <span className="text-xs" title="No apto para angelitos">😇</span>}</>
                                               : <span className="text-xs" style={{color:'var(--text-muted)'}}>Sin reseñas aún</span>
                                             }
                                           </div>
@@ -1440,6 +1440,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                                       <div className="flex items-center gap-2 mb-0.5">
                                                         <span className="text-xs font-medium" style={{color:'var(--text-primary)'}}>{rev.friend?.name}</span>
                                                         <StarDisplay value={rev.rating} size={10} />
+                                                        {rev.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
                                                       </div>
                                                       {rev.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{rev.comment}</p>}
                                                     </div>
@@ -1494,13 +1495,49 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                 {(() => {
                                   const gameReviews = reviews.filter(r => r.game_title.toLowerCase() === g.title.toLowerCase())
                                   const avgRating = gameReviews.length ? (gameReviews.reduce((s,r)=>s+r.rating,0)/gameReviews.length).toFixed(1) : null
-                                  return avgRating ? (
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                      <StarDisplay value={Math.round(avgRating)} size={10} />
-                                      <span className="text-xs" style={{color:'#EF9F27'}}>{avgRating}</span>
-                                      <span className="text-xs" style={{color:'var(--text-muted)'}}>({gameReviews.length})</span>
+                                  const myReview = gameReviews.find(r => r.friend_id === myProfile?.id)
+                                  if (!gameReviews.length) return null
+                                  return (
+                                    <div className="mt-2 pt-2 border-t border-white/5">
+                                      <div className="flex items-center gap-2">
+                                        <StarDisplay value={Math.round(avgRating)} size={10} />
+                                        <span className="text-xs font-medium" style={{color:'#EF9F27'}}>{avgRating}</span>
+                                        <span className="text-xs" style={{color:'var(--text-muted)'}}>({gameReviews.length})</span>
+                                        {gameReviews.some(r=>r.no_apto_angelitos) && (
+                                          <span className="text-xs" title="No apto para angelitos">😇</span>
+                                        )}
+                                      </div>
+                                      <button onClick={()=>setExpandedReviews(p=>({...p,[g.title]:!p[g.title]}))}
+                                        className="flex items-center gap-1 text-xs mt-1.5 transition-colors hover:opacity-80"
+                                        style={{color:'var(--text-muted)'}}>
+                                        <MessageSquare size={11} />
+                                        {expandedReviews[g.title] ? 'Ocultar' : `Ver reseñas (${gameReviews.length})`}
+                                      </button>
+                                      {expandedReviews[g.title] && (
+                                        <div className="mt-2 space-y-2">
+                                          {gameReviews.map(rev => (
+                                            <div key={rev.id} className="flex gap-2">
+                                              {rev.friend?.avatar_url
+                                                ? <img src={rev.friend.avatar_url} className="w-6 h-6 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                                                : null}
+                                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 avatar-initials"
+                                                style={{display: rev.friend?.avatar_url ? 'none' : 'flex', fontSize:'8px'}}>
+                                                {initials(rev.friend?.name||'?')}
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                  <span className="text-xs font-medium" style={{color:'var(--text-primary)'}}>{rev.friend?.name}</span>
+                                                  <StarDisplay value={rev.rating} size={9} />
+                                                  {rev.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
+                                                </div>
+                                                {rev.comment && <p className="text-xs mt-0.5 leading-relaxed" style={{color:'var(--text-muted)'}}>{rev.comment}</p>}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
-                                  ) : null
+                                  )
                                 })()}
                               </div>
                               <div className="flex flex-col gap-1 items-end">
@@ -1838,6 +1875,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                                   <div className="flex items-center gap-2 mb-2">
                                     <StarDisplay value={rev.rating} size={12} />
                                     <span className="text-xs font-semibold" style={{color:'#EF9F27'}}>{rev.rating}/5</span>
+                                    {rev.no_apto_angelitos && (
+                                      <span className="text-xs px-2 py-0.5 rounded-full" style={{background:'rgba(239,68,68,0.1)', color:'#FCA5A5', border:'1px solid rgba(239,68,68,0.2)'}}>
+                                        😇 no apto angelitos
+                                      </span>
+                                    )}
                                   </div>
                                   {rev.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-secondary)'}}>{rev.comment}</p>}
                                   <div className="text-xs mt-2" style={{color:'var(--text-muted)'}}>{fmtDate(rev.created_at)}</div>
