@@ -9,6 +9,28 @@ async function getBlizzardToken() {
   return d.access_token
 }
 
+async function resolveRealmSlug(region, realmName, token) {
+  // First try the simple transform
+  const simple = realmName.toLowerCase().replace(/[\s']/g, '').replace(/-/g, '')
+  
+  try {
+    // Ask Blizzard for the real slug via realm search
+    const locale = region === 'eu' ? 'es_ES' : 'en_US'
+    const searchRes = await fetch(
+      `https://${region}.api.blizzard.com/data/wow/realm/index?namespace=dynamic-${region}&locale=${locale}&access_token=${token}`
+    )
+    const searchData = await searchRes.json()
+    const realms = searchData.realms || []
+
+    // Find matching realm by name (case-insensitive, ignore apostrophes/spaces)
+    const normalize = s => s.toLowerCase().replace(/[\s'`']/g, '')
+    const match = realms.find(r => normalize(r.name) === normalize(realmName) || normalize(r.slug) === normalize(realmName))
+    if (match) return match.slug
+  } catch {}
+
+  return simple
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end()
 
@@ -19,9 +41,10 @@ export default async function handler(req, res) {
 
   try {
     const token = await getBlizzardToken()
+    if (!token) return res.status(500).json({ error: 'No se pudo autenticar con Blizzard. Verificá las credenciales.' })
     const base = `https://${region}.api.blizzard.com`
     const charSlug = character.toLowerCase()
-    const realmSlug = realm.toLowerCase().replace(/\s+/g, '-').replace(/'/g, '')
+    const realmSlug = await resolveRealmSlug(region, realm, token)
     const locale = region === 'eu' ? 'es_ES' : 'en_US'
     const q = `?namespace=profile-${region}&locale=${locale}&access_token=${token}`
 
