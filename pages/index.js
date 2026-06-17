@@ -315,7 +315,7 @@ function Toast({ message }) {
   if (!message) return null
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm text-white shadow-lg flex items-center gap-2 transition-all"
-      style={{background:"var(--bg-secondary)", border:'0.5px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', maxWidth:'90vw'}}>
+      style={{background:"var(--bg-secondary)", border:'0.5px solid rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)', maxWidth:'90vw'}}>
       {message.includes('✓') || message.includes('Listo') || message.includes('guardado') || message.includes('actualizado') || message.includes('agregado')
         ? <span className="text-teal-400 flex-shrink-0">✓</span>
         : <div className="w-3 h-3 border-2 border-white/20 border-t-purple-400 rounded-full animate-spin flex-shrink-0"></div>
@@ -975,7 +975,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
           {/* Guest banner */}
           {!session && (
-            <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sticky top-0 z-20" style={{background:'rgba(127,119,221,0.15)', borderBottom:'1px solid rgba(127,119,221,0.2)', backdropFilter:'blur(8px)'}}>
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm sticky top-0 z-20" style={{background:'rgba(127,119,221,0.15)', borderBottom:'1px solid rgba(127,119,221,0.2)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
               <span style={{color:'rgba(200,196,255,0.9)'}}>👋 Estás viendo la app como invitado — no podés editar nada</span>
               <button onClick={()=>router.push('/login')}
                 className="text-xs px-3 py-1 rounded-lg flex-shrink-0 transition-all"
@@ -1825,7 +1825,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           </div>
         </div>
       )}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bg-bottombar)", backdropFilter:"blur(12px)"}}>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bg-bottombar)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)"}}>
         {[
           {t:'list', Icon:Users, label:'Amigos'},
           {t:'activity', Icon:Zap, label:'Actividad'},
@@ -1852,17 +1852,17 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             <div className="flex flex-col items-end gap-2 mb-2">
               <button onClick={()=>{setFabOpen(false);resetGameForm();setModal('game')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-white/10 shadow-lg transition-all hover:bg-white/10"
-                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
+                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
                 <Plus size={15} /> Agregar juego
               </button>
               <button onClick={()=>{setFabOpen(false);setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-green-500/20 shadow-lg transition-all hover:bg-green-500/10"
-                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
+                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
                 <Gamepad2 size={15} /> Importar Steam
               </button>
               <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
-                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
+                style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
                 <Gamepad2 size={15} /> Vincular WoW
               </button>
 
@@ -1870,7 +1870,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           )}
           <button onClick={()=>setFabOpen(p=>!p)}
             className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all"
-            style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)'}}>
+            style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
             <Plus size={24} className="transition-transform duration-300" style={{color:'rgb(127,119,221)', transform: fabOpen ? 'rotate(45deg)' : 'rotate(0deg)'}} />
           </button>
         </div>
