@@ -135,14 +135,17 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
               <div className="flex items-center gap-3 px-4 py-3.5" style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)'}}>
                 <label className="cursor-pointer flex-shrink-0 relative group">
                   {(() => {
-                    const url = myProfile?.avatar_url || session.user.user_metadata?.avatar_url
-                    return url
-                      ? <img src={url} className="w-12 h-12 rounded-full object-cover"
-                          onError={e=>{e.target.style.display='none'; e.target.nextSibling.style.display='flex'}} />
+                    // Only use OAuth avatar if user has no custom avatar
+                    const url = myProfile?.avatar_url || null
+                    // Add cache buster if URL doesn't already have one
+                    const src = url && !url.includes('?t=') ? url + '?t=' + Date.now() : url
+                    return src
+                      ? <img src={src} className="w-12 h-12 rounded-full object-cover"
+                          onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
                       : null
                   })()}
                   <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold avatar-initials"
-                    style={{display: (myProfile?.avatar_url || session.user.user_metadata?.avatar_url) ? 'none' : 'flex'}}>
+                    style={{display: myProfile?.avatar_url ? 'none' : 'flex'}}>
                     {(myProfile?.name||'?')[0].toUpperCase()}
                   </div>
                   <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
