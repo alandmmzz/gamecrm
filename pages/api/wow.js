@@ -48,11 +48,14 @@ export default async function handler(req, res) {
     const q = `?namespace=profile-${region}&locale=${locale}&access_token=${token}`
 
     // Fetch character summary
+    const summaryUrl = `${base}/profile/wow/character/${realmSlug}/${charSlug}${q}`
+    console.log('[WoW API] fetching:', summaryUrl.replace(token, 'TOKEN'))
     const [summaryRes, equipRes, raidsRes] = await Promise.all([
-      fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}${q}`),
+      fetch(summaryUrl),
       fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/equipment${q}`),
       fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
     ])
+    console.log('[WoW API] summary status:', summaryRes.status)
 
     const summaryText = await summaryRes.text()
     if (!summaryText) return res.status(500).json({ error: `Blizzard devolvió respuesta vacía (realm: ${realmSlug}, char: ${charSlug})` })
