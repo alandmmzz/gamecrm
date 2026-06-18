@@ -25,7 +25,13 @@ function StarDisplay({ value, size = 12 }) {
   )
 }
 
-function LikeButtons({ review, myProfileId, onUpdate }) {
+function SteamIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
+      <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.718L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.606 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.298-.232-1.879.025l1.519.63c.956.4 1.409 1.497 1.009 2.455-.397.957-1.497 1.41-2.45 1.007zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.662 0 3.015-1.35 3.015-3.015zm-5.273.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.252 0-2.265-1.014-2.265-2.265z"/>
+    </svg>
+  )
+}
   const likes = (review.review_likes || []).filter(l => l.type === 'like')
   const dislikes = (review.review_likes || []).filter(l => l.type === 'dislike')
   const myLike = (review.review_likes || []).find(l => l.friend_id === myProfileId)
@@ -1388,7 +1394,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {selectedFriend.steam_id && (
                         <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}>
-                          <Gamepad2 size={11} /> {selectedFriend.steam_username || 'Steam'}
+                          <SteamIcon size={11} />
+                          {selectedFriend.steam_username || 'Steam'}
                         </span>
                       )}
                       {selectedFriend.wow_character && (
@@ -2097,7 +2104,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       <div className="flex flex-col items-center justify-center py-20 text-center">
                         <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
                           style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)'}}>
-                          <Gamepad2 size={24} style={{color:'#5DCAA5'}} />
+                          <SteamIcon size={24} style={{color:'#5DCAA5'}} />
                         </div>
                         <div className="text-base font-medium mb-2" style={{color:'var(--text-primary)'}}>Sin Steam vinculado</div>
                         <div className="text-sm max-w-xs" style={{color:'var(--text-muted)'}}>
@@ -2542,7 +2549,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             {modal==='steam' && (
               <>
-                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><Gamepad2 size={16} /> Importar desde Steam</h2>
+                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><SteamIcon size={16} /> Importar desde Steam</h2>
                 <p className="text-xs text-gray-500 mb-3">Para {selectedFriend?.name} · El perfil de Steam debe ser público</p>
                 <div className="rounded-lg px-3 py-2 mb-4 text-xs text-teal-300 border border-teal-500/20" style={{background:'rgba(93,202,165,0.07)'}}>
                   Los juegos ya cargados solo actualizarán sus horas jugadas — el estado y progreso no se tocan.
@@ -2766,7 +2773,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <button onClick={()=>{setFabOpen(false);setSteamId('');setSteamGames([]);setSteamError('');setModal('steam')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-green-500/20 shadow-lg transition-all hover:bg-green-500/10"
                 style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
-                <Gamepad2 size={15} /> Importar Steam
+                <SteamIcon size={15} /> Importar Steam
               </button>
               <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
