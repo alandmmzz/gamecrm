@@ -10,11 +10,7 @@ async function getBlizzardToken() {
 }
 
 async function resolveRealmSlug(region, realmName, token) {
-  // First try the simple transform
-  const simple = realmName.toLowerCase().replace(/[\s']/g, '').replace(/-/g, '')
-  
   try {
-    // Ask Blizzard for the real slug via realm search
     const locale = region === 'eu' ? 'es_ES' : 'en_US'
     const searchRes = await fetch(
       `https://${region}.api.blizzard.com/data/wow/realm/index?namespace=dynamic-${region}&locale=${locale}&access_token=${token}`
@@ -22,13 +18,17 @@ async function resolveRealmSlug(region, realmName, token) {
     const searchData = await searchRes.json()
     const realms = searchData.realms || []
 
-    // Find matching realm by name (case-insensitive, ignore apostrophes/spaces)
-    const normalize = s => s.toLowerCase().replace(/[\s'`']/g, '')
-    const match = realms.find(r => normalize(r.name) === normalize(realmName) || normalize(r.slug) === normalize(realmName))
+    const normalize = s => s.toLowerCase().replace(/[\s'`''']/g, '')
+    const match = realms.find(r =>
+      normalize(r.name) === normalize(realmName) ||
+      normalize(r.slug) === normalize(realmName) ||
+      r.slug === realmName.toLowerCase().replace(/\s+/g, '-').replace(/[''']/g, '')
+    )
     if (match) return match.slug
   } catch {}
 
-  return simple
+  // Fallback: spaces to hyphens, remove apostrophes
+  return realmName.toLowerCase().replace(/\s+/g, '-').replace(/[''']/g, '')
 }
 
 export default async function handler(req, res) {
