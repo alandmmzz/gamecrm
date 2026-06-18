@@ -56,8 +56,11 @@ export default async function handler(req, res) {
       fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
     ])
     console.log('[WoW API] summary status:', summaryRes.status)
+    console.log('[WoW API] summary headers:', Object.fromEntries(summaryRes.headers.entries()))
 
     const summaryText = await summaryRes.text()
+    console.log('[WoW API] summary body:', summaryText.slice(0, 300))
+
     if (!summaryText) return res.status(500).json({ error: `Blizzard devolvió respuesta vacía (realm: ${realmSlug}, char: ${charSlug})` })
 
     let summary
