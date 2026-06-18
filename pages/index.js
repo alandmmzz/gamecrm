@@ -1388,7 +1388,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 </div>
 
                 {/* Profile tabs */}
-                <div className="flex gap-1 mb-6 border-b border-white/5 pb-0">
+                <div className="flex gap-1 mb-6 border-b border-white/5 pb-0 overflow-x-auto scrollbar-none" style={{scrollbarWidth:'none', msOverflowStyle:'none'}}>
                   {PROFILE_TABS.map(tab => (
                     <button key={tab.id} onClick={()=>{
                       setProfileTab(tab.id)
@@ -1396,7 +1396,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         fetchWishlist(selectedFriend.steam_id)
                       }
                     }}
-                      className="px-4 py-2 text-sm font-medium transition-all relative"
+                      className="px-4 py-2 text-sm font-medium transition-all relative flex-shrink-0"
                       style={{
                         color: profileTab===tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
                       }}>
