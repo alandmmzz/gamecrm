@@ -2338,7 +2338,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             const notifLabel = (n) => {
               const name = n.from_friend?.name || 'Alguien'
-              if (n.type === 'like') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <span style={{color:'#5DCAA5'}}>👍</span> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
+              if (n.type === 'like') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <ThumbsUp size={11} className="inline" style={{color:'#5DCAA5'}} /> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
               if (n.type === 'dislike') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <ThumbsDown size={11} className="inline" style={{color:'#E07B6A'}} /> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
               if (n.type === 'review_on_your_game') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> reseñó <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span>, un juego que vos también tenés</>
               return null
