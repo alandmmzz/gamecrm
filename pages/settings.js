@@ -15,6 +15,7 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
   const [editingName, setEditingName] = useState(false)
   const [nameValue, setNameValue] = useState('')
   const [nameSaving, setNameSaving] = useState(false)
+  const [genderSaving, setGenderSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -25,6 +26,14 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
     setMyProfile(p => ({...p, name: nameValue.trim()}))
     setEditingName(false)
     setNameSaving(false)
+  }
+
+  const saveGender = async (gender) => {
+    if (!myProfile?.id) return
+    setGenderSaving(true)
+    await supabase.from('friends').update({ gender }).eq('id', myProfile.id)
+    setMyProfile(p => ({...p, gender}))
+    setGenderSaving(false)
   }
 
   const deleteProfile = async () => {
@@ -189,6 +198,29 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
                 )}
               </div>
               <Row icon={LogOut} label="Cerrar sesión" danger onClick={()=>{signOut();router.push('/login')}} />
+              {/* Gender */}
+              <div className="px-4 py-3.5 border-t" style={{borderColor:'var(--border)'}}>
+                <div className="text-xs mb-3" style={{color:'var(--text-muted)'}}>Género <span style={{opacity:0.6}}>(para el título de rol)</span></div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'male',   label: 'Hombre' },
+                    { value: 'female', label: 'Mujer'  },
+                    { value: 'other',  label: 'Otro'   },
+                  ].map(opt => (
+                    <button key={opt.value} type="button"
+                      onClick={() => saveGender(opt.value)}
+                      disabled={genderSaving}
+                      className="py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: myProfile?.gender === opt.value ? 'rgba(127,119,221,0.2)' : 'var(--bg-card-hover)',
+                        border: `1px solid ${myProfile?.gender === opt.value ? 'rgba(127,119,221,0.5)' : 'var(--border)'}`,
+                        color: myProfile?.gender === opt.value ? '#b4b0ff' : 'var(--text-muted)',
+                      }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </Section>
           )}
 

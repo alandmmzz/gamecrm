@@ -16,6 +16,7 @@ export default function Onboarding() {
 
   // Create form state
   const [name, setName] = useState('')
+  const [gender, setGender] = useState('') // 'male' | 'female' | 'other'
   const [steamId, setSteamId] = useState('')
   const [wowChar, setWowChar] = useState('')
   const [wowRealm, setWowRealm] = useState('')
@@ -74,7 +75,7 @@ export default function Onboarding() {
       const res = await fetch('/api/friends', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: name.trim(), username: name.trim().toLowerCase().replace(/\s+/g,'_'), user_id: isAdminMode ? null : session?.user?.id || null })
+        body: JSON.stringify({ name: name.trim(), username: name.trim().toLowerCase().replace(/\s+/g,'_'), user_id: isAdminMode ? null : session?.user?.id || null, gender: gender || null })
       })
       const friend = await res.json()
 
@@ -225,6 +226,27 @@ export default function Onboarding() {
               <div className="mb-4">
                 <label className="block text-xs text-gray-500 mb-1">Nombre *</label>
                 <input value={name} onChange={e=>setName(e.target.value)} placeholder="Tu nombre" className={inputCls} style={inputStyle} />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-2">Género <span className="text-gray-600">(para el título de rol)</span></label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'male',   label: 'Hombre' },
+                    { value: 'female', label: 'Mujer'  },
+                    { value: 'other',  label: 'Otro'   },
+                  ].map(opt => (
+                    <button key={opt.value} type="button" onClick={() => setGender(opt.value)}
+                      className="py-2.5 rounded-xl text-sm font-medium transition-all"
+                      style={{
+                        background: gender === opt.value ? 'rgba(127,119,221,0.2)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${gender === opt.value ? 'rgba(127,119,221,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                        color: gender === opt.value ? '#b4b0ff' : '#6b7280',
+                      }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="mb-4">

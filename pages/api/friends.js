@@ -20,12 +20,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { name, username, user_id } = req.body
+    const { name, username, user_id, gender } = req.body
     if (!name) return res.status(400).json({ error: 'name required' })
 
     const { data, error } = await supabase
       .from('friends')
-      .insert({ name, username: username || name.toLowerCase().replace(/\s+/g, '_'), user_id: user_id || null })
+      .insert({ name, username: username || name.toLowerCase().replace(/\s+/g, '_'), user_id: user_id || null, gender: gender || null })
       .select()
       .single()
 

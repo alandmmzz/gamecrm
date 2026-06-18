@@ -458,7 +458,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       const r = await fetch('/api/role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ genres: top3 })
+        body: JSON.stringify({ genres: top3, gender: friend.gender || null })
       })
       const d = await r.json()
       const title = d.title
@@ -940,7 +940,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       const top3 = Object.entries(updatedGenres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g)
       if (top3.length) {
         try {
-          const r = await fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ genres: top3 }) })
+          const r = await fetch('/api/role', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ genres: top3, gender: selectedFriend?.gender || null }) })
           const d = await r.json()
           if (d.title) {
             const res = await fetch('/api/friends', { method:'PATCH', headers:{'Content-Type':'application/json'},
