@@ -73,6 +73,7 @@ export default function GamePage() {
   const [reviews, setReviews] = useState([])
   const [friends, setFriends] = useState([])
   const [hltb, setHltb] = useState(null)
+  const [wishlistFriends, setWishlistFriends] = useState([])
   const [loading, setLoading] = useState(true)
   const [descExpanded, setDescExpanded] = useState(false)
   const [trailerError, setTrailerError] = useState(false)
@@ -98,10 +99,12 @@ export default function GamePage() {
       fetch(`/api/reviews?game_title=${encodeURIComponent(title)}`).then(r => r.json()),
       fetch('/api/friends').then(r => r.json()),
       fetch(`/api/hltb?q=${encodeURIComponent(title)}`).then(r => r.json()),
-    ]).then(([detailData, reviewsData, friendsData, hltbData]) => {
+      fetch(`/api/wishlist_friends?title=${encodeURIComponent(title)}`).then(r => r.json()),
+    ]).then(([detailData, reviewsData, friendsData, hltbData, wishlistData]) => {
       setDetail(detailData)
       setReviews(Array.isArray(reviewsData) ? reviewsData : [])
       setFriends(Array.isArray(friendsData) ? friendsData : [])
+      setWishlistFriends(Array.isArray(wishlistData) ? wishlistData : [])
       const hltbMatch = Array.isArray(hltbData)
         ? hltbData.find(h => h.title.toLowerCase() === title.toLowerCase()) || hltbData[0]
         : null
@@ -323,6 +326,30 @@ export default function GamePage() {
                     <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>
                       {gameLabel(g.status)}
                     </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Who has it in wishlist */}
+          {wishlistFriends.length > 0 && (
+            <div className="rounded-2xl p-4" style={{background:'var(--bg-card)', border:'1px solid var(--border)'}}>
+              <div className="text-xs font-medium uppercase tracking-wider mb-3" style={{color:'var(--text-muted)'}}>
+                En wishlist del grupo
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {wishlistFriends.map(w => (
+                  <button key={w.friend_id} onClick={() => router.push(`/?profile=${w.friend_id}`)}
+                    className="flex items-center gap-2 transition-opacity hover:opacity-80">
+                    {w.friend?.avatar_url
+                      ? <img src={w.friend.avatar_url} className="w-8 h-8 rounded-full object-cover" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                      : null}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium avatar-initials"
+                      style={{display: w.friend?.avatar_url ? 'none' : 'flex', fontSize:'10px'}}>
+                      {initials(w.friend?.name||'?')}
+                    </div>
+                    <span className="text-sm" style={{color:'var(--text-secondary)'}}>{w.friend?.name}</span>
                   </button>
                 ))}
               </div>

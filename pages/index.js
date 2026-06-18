@@ -539,12 +539,14 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     setWowCharsLoading(false)
   }
 
-  const fetchWishlist = async (steamId) => {
+  const fetchWishlist = async (steamId, friendId) => {
     if (!steamId) return
     setWishlistLoading(true)
     setWishlistError('')
     try {
-      const r = await fetch(`/api/wishlist?steamid=${encodeURIComponent(steamId)}`)
+      const params = new URLSearchParams({ steamid: steamId })
+      if (friendId) params.set('friend_id', friendId)
+      const r = await fetch(`/api/wishlist?${params}`)
       const data = await r.json()
       if (data.error) setWishlistError(data.error)
       setWishlist(data.games || [])
@@ -1476,7 +1478,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <button key={tab.id} onClick={()=>{
                       setProfileTab(tab.id)
                       if (tab.id === 'wishlist' && selectedFriend?.steam_id && wishlist.length === 0) {
-                        fetchWishlist(selectedFriend.steam_id)
+                        fetchWishlist(selectedFriend.steam_id, selectedFriend.id)
                       }
                       if (tab.id === 'wow' && selectedFriend?.id && wowCharacters.length === 0) {
                         fetchWowCharacters(selectedFriend.id)
@@ -2168,7 +2170,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                         <div className="text-xs mb-4 max-w-xs" style={{color:'var(--text-muted)', opacity:0.6}}>
                           El perfil de Steam puede ser privado. Para verla, {isOwner(selectedFriend?.id) ? 'andá a tu perfil de Steam → Editar perfil → Configuración de privacidad → Wishlist → Público.' : `${selectedFriend.name} tiene que hacer su wishlist pública en Steam.`}
                         </div>
-                        <button onClick={()=>fetchWishlist(selectedFriend.steam_id)}
+                        <button onClick={()=>fetchWishlist(selectedFriend.steam_id, selectedFriend.id)}
                           className="text-xs px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-gray-200 transition-colors">
                           Reintentar
                         </button>
@@ -2341,6 +2343,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               if (n.type === 'like') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <ThumbsUp size={11} className="inline" style={{color:'#5DCAA5'}} /> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
               if (n.type === 'dislike') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <ThumbsDown size={11} className="inline" style={{color:'#E07B6A'}} /> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
               if (n.type === 'review_on_your_game') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> reseñó <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span>, un juego que vos también tenés</>
+              if (n.type === 'review_on_wishlist') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> reseñó <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span>, un juego que tenés en tu wishlist</>
               return null
             }
 

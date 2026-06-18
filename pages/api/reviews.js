@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message })
 
-    // Notify friends who also have this game
+    // Notify friends who have this game in their library
     const { data: friendsWithGame } = await supabase
       .from('games')
       .select('friend_id')
@@ -57,6 +57,26 @@ export default async function handler(req, res) {
         game_title,
       }))
       await supabase.from('notifications').insert(notifs)
+    }
+
+    // Notify friends who have this game in their wishlist
+    const { data: friendsWithWishlist } = await supabase
+      .from('wishlist_games')
+      .select('friend_id')
+      .ilike('title', game_title)
+      .neq('friend_id', friend_id)
+
+    if (friendsWithWishlist?.length) {
+      const wishlistNotifs = friendsWithWishlist
+        .filter(w => !friendsWithGame?.find(g => g.friend_id === w.friend_id)) // avoid double notif
+        .map(w => ({
+          to_friend_id: w.friend_id,
+          from_friend_id: friend_id,
+          type: 'review_on_wishlist',
+          review_id: data.id,
+          game_title,
+        }))
+      if (wishlistNotifs.length) await supabase.from('notifications').insert(wishlistNotifs)
     }
 
     return res.status(201).json(data)
