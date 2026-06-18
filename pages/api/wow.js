@@ -55,13 +55,20 @@ export default async function handler(req, res) {
       fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
     ])
 
-    const summary = await summaryRes.json()
+    const summaryText = await summaryRes.text()
+    if (!summaryText) return res.status(500).json({ error: `Blizzard devolvió respuesta vacía (realm: ${realmSlug}, char: ${charSlug})` })
+
+    let summary
+    try { summary = JSON.parse(summaryText) }
+    catch (e) { return res.status(500).json({ error: `Respuesta inválida de Blizzard: ${summaryText.slice(0,100)}` }) }
+
     if (summary.code === 404 || summary.code === 403) {
-      return res.status(404).json({ error: 'Personaje no encontrado. Verificá el nombre, reino y región.' })
+      return res.status(404).json({ error: `Personaje no encontrado. Realm resuelto: "${realmSlug}". Verificá el nombre, reino y región.` })
     }
 
-    const equip = await equipRes.json()
-    const raids = await raidsRes.json()
+    let equip = {}, raids = {}
+    try { equip = await equipRes.json() } catch {}
+    try { raids = await raidsRes.json() } catch {}
 
     // Get current raid progress (latest expansion)
     let raidProgress = null
