@@ -546,13 +546,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
         }
         setMyProfile(profile)
         fetchNotifications(profile.id)
+        fetchFriends()
+      } else {
+        setMyProfile(null)
+      }
+    }
+    initAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
       if (session) {
         const profile = await getProfile(session)
-        if (!profile) {
-          router.replace('/onboarding')
-          return
-        }
+        if (!profile) { router.replace('/onboarding'); return }
         setMyProfile(profile)
         fetchNotifications(profile.id)
         fetchFriends()
