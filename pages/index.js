@@ -25,10 +25,17 @@ function StarDisplay({ value, size = 12 }) {
   )
 }
 
-function SteamIcon({ size = 14 }) {
-  return (
+function SteamIcon({ size = 14 }) {  return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
       <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.718L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.606 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.298-.232-1.879.025l1.519.63c.956.4 1.409 1.497 1.009 2.455-.397.957-1.497 1.41-2.45 1.007zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.662 0 3.015-1.35 3.015-3.015zm-5.273.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.252 0-2.265-1.014-2.265-2.265z"/>
+    </svg>
+  )
+}
+
+function WowIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
+      <path d="M12 2L4 6v5c0 5.25 3.4 10.15 8 11.5C16.6 21.15 20 16.25 20 11V6L12 2zm0 2.18L18 7.3V11c0 4.2-2.7 8.1-6 9.32C8.7 19.1 6 15.2 6 11V7.3L12 4.18zM9 8v2H7v2h2v2h2v-2h2v-2h-2V8H9z"/>
     </svg>
   )
 }
@@ -442,6 +449,8 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [wowRealm, setWowRealm] = useState('')
   const [wowRegion, setWowRegion] = useState('us')
   const [wowData, setWowData] = useState(null)
+  const [wowCharacters, setWowCharacters] = useState([]) // wow_characters for current profile
+  const [wowCharsLoading, setWowCharsLoading] = useState(false)
   const [wowLoading, setWowLoading] = useState(false)
   const [wowError, setWowError] = useState('')
   const [wowSaving, setWowSaving] = useState(false)
@@ -517,6 +526,17 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       body: JSON.stringify({ friend_id: myProfile.id })
     })
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const fetchWowCharacters = async (friendId) => {
+    if (!friendId) return
+    setWowCharsLoading(true)
+    try {
+      const r = await fetch(`/api/wow_characters?friend_id=${friendId}`)
+      const data = await r.json()
+      setWowCharacters(Array.isArray(data) ? data : [])
+    } catch {}
+    setWowCharsLoading(false)
   }
 
   const fetchWishlist = async (steamId) => {
@@ -832,29 +852,38 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const saveWow = async () => {
     if (!wowData || !selected) return
     setWowSaving(true)
-    // Save WoW as a special game entry
-    const existing = selectedFriend?.games?.find(g => g.title === 'World of Warcraft')
-    const wowTitle = `WoW: ${wowData.name} (${wowData.realm})`
-    if (existing) {
-      await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ id: existing.id, hours_played: existing.hours_played, pct: existing.pct }) })
-    } else {
-      await fetch('/api/games', { method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          friend_id: selected, title: wowTitle,
-          status: 'playing', pct: 0, hours_played: 0,
-          cover_url: 'https://cdn.cloudflare.steamstatic.com/steam/apps/2835570/header.jpg',
-          description: `${wowData.spec} ${wowData.class} | ilvl ${wowData.ilvl} | ${wowData.faction}`,
-          no_progress: true,
-        })
+
+    // Save to wow_characters table
+    const existingChars = wowCharacters.filter(c => c.friend_id === selected)
+    const isFirst = existingChars.length === 0
+    await fetch('/api/wow_characters', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        friend_id: selected,
+        character_name: wowData.name,
+        realm: wowData.realm,
+        region: wowRegion,
+        level: wowData.level,
+        class: wowData.class,
+        spec: wowData.spec,
+        race: wowData.race,
+        faction: wowData.faction,
+        ilvl: wowData.ilvl,
+        achievement_points: wowData.achievement_points,
+        raid_progress: wowData.raid_progress || null,
+        avatar_url: wowData.avatar || null,
+        is_main: isFirst, // first character added is main
       })
-    }
-    await fetchFriends()
-    // Save wow_character to friend profile
+    })
+
+    // Keep friends.wow_character updated with main char for badge
     await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ id: selected, wow_character: wowData.name, wow_realm: wowData.realm, wow_region: wowRegion })
     })
+
     await fetchFriends()
+    await fetchWowCharacters(selected)
     setWowSaving(false); setModal(null); setWowData(null); setWowChar(''); setWowRealm('')
     showSuccess('Personaje de WoW guardado ✓')
   }
@@ -1211,7 +1240,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   const actives = f.games?.filter(g=>g.status==='playing')||[]
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
                   return (
-                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');setProfileTab('games');setWishlist([]);setWishlistError('');window.scrollTo({top:0,behavior:'smooth'})}}
+                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');setProfileTab('games');setWishlist([]);setWishlistError('');setWowCharacters([]);window.scrollTo({top:0,behavior:'smooth'})}}
                       className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
@@ -1372,6 +1401,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               { id: 'activity', label: 'Actividad' },
               { id: 'reviews',  label: 'Reseñas' },
               { id: 'wishlist', label: 'Wishlist' },
+              ...(selectedFriend?.wow_character ? [{ id: 'wow', label: 'WoW' }] : []),
             ]
 
             return (
@@ -1402,7 +1432,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       )}
                       {selectedFriend.wow_character && (
                         <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(244,161,36,0.12)', border:'1px solid rgba(244,161,36,0.3)', color:'#f4a124'}}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l2 3-2 1-2-1 2-3zm-4 3l1.5 2.5L8 12l-1-3 1-1zm8 0l1 1-1 3-1.5-1.5L16 8zm-4 5l3 1.5-1 2.5H9l-1-2.5 3-1.5h1z"/></svg>
+                          <WowIcon size={11} />
                           {selectedFriend.wow_character}
                         </span>
                       )}
@@ -1447,6 +1477,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       setProfileTab(tab.id)
                       if (tab.id === 'wishlist' && selectedFriend?.steam_id && wishlist.length === 0) {
                         fetchWishlist(selectedFriend.steam_id)
+                      }
+                      if (tab.id === 'wow' && selectedFriend?.id && wowCharacters.length === 0) {
+                        fetchWowCharacters(selectedFriend.id)
                       }
                     }}
                       className="px-4 py-2 text-sm font-medium transition-all relative flex-shrink-0"
@@ -2167,6 +2200,117 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     )}
                   </div>
                 )}
+
+                {/* TAB: WoW */}
+                {profileTab==='wow' && (
+                  <div>
+                    {wowCharsLoading ? (
+                      <div className="flex items-center justify-center py-20">
+                        <div className="w-6 h-6 border-2 border-white/10 border-t-amber-400 rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {canEdit(selectedFriend?.id) && (
+                          <button onClick={()=>{setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
+                            className="w-full py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+                            style={{background:'rgba(244,161,36,0.08)', color:'#f4a124', border:'1px solid rgba(244,161,36,0.2)'}}>
+                            <WowIcon size={14} /> Agregar personaje
+                          </button>
+                        )}
+                        {wowCharacters.length === 0 ? (
+                          <div className="text-center py-12 text-gray-500">Sin personajes vinculados.</div>
+                        ) : wowCharacters.map(char => {
+                          const isHorde = char.faction?.toLowerCase().includes('horde') || char.faction?.toLowerCase().includes('horda')
+                          const factionColor = isHorde ? '#C41E3A' : '#1A53C0'
+                          const factionLabel = isHorde ? 'Horda' : 'Alianza'
+                          return (
+                            <div key={char.id} className="rounded-2xl overflow-hidden" style={{background:'var(--bg-card)', border:`1px solid ${char.is_main ? 'rgba(244,161,36,0.3)' : 'var(--border)'}`}}>
+                              <div className="flex items-center gap-3 p-4">
+                                {char.avatar_url
+                                  ? <img src={char.avatar_url} alt={char.character_name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                                  : <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'rgba(244,161,36,0.1)'}}>
+                                      <WowIcon size={24} style={{color:'#f4a124'}} />
+                                    </div>
+                                }
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold" style={{color:'var(--text-primary)'}}>{char.character_name}</span>
+                                    {char.is_main && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{background:'rgba(244,161,36,0.15)', color:'#f4a124', border:'1px solid rgba(244,161,36,0.3)'}}>Principal</span>}
+                                    <span className="text-xs px-1.5 py-0.5 rounded-full" style={{background:`${factionColor}22`, color:factionColor, border:`1px solid ${factionColor}44`}}>{factionLabel}</span>
+                                  </div>
+                                  <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>{char.realm} · {char.region?.toUpperCase()} · Nv. {char.level}</div>
+                                  <div className="text-xs mt-0.5" style={{color:'var(--text-muted)'}}>{char.spec} {char.class} · {char.race}</div>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <div className="text-xl font-bold" style={{color:'#f4a124'}}>{char.ilvl}</div>
+                                  <div className="text-xs" style={{color:'var(--text-muted)'}}>ilvl</div>
+                                </div>
+                              </div>
+                              <div className="px-4 pb-3">
+                                <div className="h-1.5 rounded-full overflow-hidden" style={{background:'var(--border)'}}>
+                                  <div className="h-full rounded-full" style={{
+                                    width:`${Math.min(100,Math.max(0,((char.ilvl||0)-400)/(700-400)*100))}%`,
+                                    background:'linear-gradient(to right, #f4a124, #fde68a)',
+                                  }} />
+                                </div>
+                                <div className="flex justify-between text-xs mt-1" style={{color:'var(--text-muted)',opacity:0.5}}>
+                                  <span>400</span><span>ilvl máx</span>
+                                </div>
+                              </div>
+                              {char.raid_progress?.length > 0 && (
+                                <div className="px-4 pb-4 border-t border-white/5 pt-3">
+                                  <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{color:'var(--text-muted)'}}>Raid Progress</div>
+                                  <div className="space-y-1.5">
+                                    {char.raid_progress.map((raid,i)=>(
+                                      <div key={i} className="flex items-center justify-between text-xs">
+                                        <span className="truncate flex-1" style={{color:'var(--text-secondary)'}}>{raid.name}</span>
+                                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                          <span className="font-medium" style={{color:raid.difficulty==='mythic'?'#c8a2c8':raid.difficulty==='heroic'?'#ff8000':'#4ecca3'}}>{raid.progress}</span>
+                                          <span className="capitalize" style={{color:'var(--text-muted)',opacity:0.6}}>{raid.difficulty}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="px-4 pb-4 flex items-center justify-between">
+                                {char.achievement_points ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Trophy size={12} className="text-amber-400" />
+                                    <span className="text-xs" style={{color:'var(--text-muted)'}}>{char.achievement_points.toLocaleString()} logros</span>
+                                  </div>
+                                ) : <div />}
+                                {canEdit(selectedFriend?.id) && (
+                                  <div className="flex gap-2">
+                                    {!char.is_main && (
+                                      <button onClick={async()=>{
+                                        await fetch('/api/wow_characters',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:char.id,friend_id:selectedFriend.id,is_main:true})})
+                                        await fetch('/api/friends',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:selectedFriend.id,wow_character:char.character_name,wow_realm:char.realm,wow_region:char.region})})
+                                        await fetchFriends(); fetchWowCharacters(selectedFriend.id)
+                                      }}
+                                        className="text-xs px-2.5 py-1 rounded-lg transition-colors"
+                                        style={{color:'#f4a124',border:'1px solid rgba(244,161,36,0.3)',background:'rgba(244,161,36,0.08)'}}>
+                                        Hacer principal
+                                      </button>
+                                    )}
+                                    <button onClick={async()=>{
+                                      await fetch(`/api/wow_characters?id=${char.id}`,{method:'DELETE'})
+                                      fetchWowCharacters(selectedFriend.id)
+                                    }}
+                                      className="text-xs p-1.5 rounded-lg transition-colors hover:bg-red-500/10"
+                                      style={{color:'var(--text-muted)',border:'1px solid var(--border)'}}>
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )
           })()}
@@ -2615,7 +2759,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
 
             {modal==='wow' && (
               <>
-                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><Trophy size={16} /> Conectar WoW</h2>
+                <h2 className="text-base font-semibold text-white mb-1 flex items-center gap-2"><WowIcon size={16} /> Conectar WoW</h2>
                 <p className="text-xs text-gray-500 mb-4">Para {selectedFriend?.name}</p>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <div>
@@ -2628,9 +2772,10 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-xs text-gray-500 mb-1">Región</label>
-                  <select value={wowRegion} onChange={e=>setWowRegion(e.target.value)} className={inputCls}>
-                    <option value="us">Americas (US)</option>
+                  <label className="block text-xs text-gray-500 mb-1">Región <span className="text-gray-600">(LATAM usa Americas)</span></label>
+                  <select value={wowRegion} onChange={e=>setWowRegion(e.target.value)} className={inputCls}
+                    style={{background:'var(--bg-input)', border:'1px solid var(--border-input)', color:'var(--text-primary)'}}>
+                    <option value="us">Americas / LATAM (US)</option>
                     <option value="eu">Europa (EU)</option>
                     <option value="kr">Korea (KR)</option>
                     <option value="tw">Taiwan (TW)</option>
@@ -2783,7 +2928,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               <button onClick={()=>{setFabOpen(false);setWowChar('');setWowRealm('');setWowData(null);setWowError('');setModal('wow')}}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white border border-amber-500/20 shadow-lg transition-all hover:bg-amber-500/10"
                 style={{background:'var(--bg-modal)', border:'1px solid var(--border)', backdropFilter:'blur(8px)', WebkitBackdropFilter:'blur(8px)'}}>
-                <Gamepad2 size={15} /> Vincular WoW
+                <WowIcon size={15} /> Vincular WoW
               </button>
             </div>
           )}

@@ -10,6 +10,7 @@ async function getBlizzardToken() {
 }
 
 async function resolveRealmSlug(region, realmName, token) {
+  // Strategy 1: query Blizzard realm index
   try {
     const locale = region === 'eu' ? 'es_ES' : 'en_US'
     const searchRes = await fetch(
@@ -17,18 +18,16 @@ async function resolveRealmSlug(region, realmName, token) {
     )
     const searchData = await searchRes.json()
     const realms = searchData.realms || []
-
-    const normalize = s => s.toLowerCase().replace(/[\s'`''']/g, '')
+    const normalize = s => s.toLowerCase().replace(/[\s'`'''\-]/g, '')
     const match = realms.find(r =>
       normalize(r.name) === normalize(realmName) ||
-      normalize(r.slug) === normalize(realmName) ||
-      r.slug === realmName.toLowerCase().replace(/\s+/g, '-').replace(/[''']/g, '')
+      normalize(r.slug) === normalize(realmName)
     )
     if (match) return match.slug
   } catch {}
 
-  // Fallback: spaces to hyphens, remove apostrophes
-  return realmName.toLowerCase().replace(/\s+/g, '-').replace(/[''']/g, '')
+  // Strategy 2: spaces→hyphens, remove apostrophes (quel'thalas → quel-thalas)
+  return realmName.toLowerCase().replace(/[''']/g, '').replace(/\s+/g, '-')
 }
 
 export default async function handler(req, res) {
