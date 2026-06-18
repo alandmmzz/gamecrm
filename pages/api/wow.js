@@ -55,20 +55,19 @@ export default async function handler(req, res) {
       fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/equipment${q}`),
       fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
     ])
-    console.log('[WoW API] summary status:', summaryRes.status)
-    console.log('[WoW API] summary headers:', Object.fromEntries(summaryRes.headers.entries()))
-
     const summaryText = await summaryRes.text()
-    console.log('[WoW API] summary body:', summaryText.slice(0, 300))
+    console.log('[WoW API] status:', summaryRes.status, 'body:', summaryText.slice(0,300))
 
-    if (!summaryText) return res.status(500).json({ error: `Blizzard devolvió respuesta vacía (realm: ${realmSlug}, char: ${charSlug})` })
+    if (!summaryText || summaryText.trim() === '') {
+      return res.status(500).json({ error: `HTTP ${summaryRes.status} — respuesta vacía de Blizzard. URL: /profile/wow/character/${realmSlug}/${charSlug}` })
+    }
 
     let summary
     try { summary = JSON.parse(summaryText) }
-    catch (e) { return res.status(500).json({ error: `Respuesta inválida de Blizzard: ${summaryText.slice(0,100)}` }) }
+    catch (e) { return res.status(500).json({ error: `Respuesta inválida de Blizzard (HTTP ${summaryRes.status}): ${summaryText.slice(0,200)}` }) }
 
-    if (summary.code === 404 || summary.code === 403) {
-      return res.status(404).json({ error: `Personaje no encontrado. Realm resuelto: "${realmSlug}". Verificá el nombre, reino y región.` })
+    if (summary.code === 404 || summary.code === 403 || summary.status === 404) {
+      return res.status(404).json({ error: `Personaje no encontrado. Realm: "${realmSlug}", Char: "${charSlug}". Respuesta: ${JSON.stringify(summary).slice(0,150)}` })
     }
 
     let equip = {}, raids = {}
