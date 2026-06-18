@@ -15,9 +15,24 @@ async function fetchFromSteam(steamid) {
       const data = await r.json()
       const items = data.response?.items || []
       if (items.length > 0) {
+        // Enrich with names from Steam Store API (batch of 100 appids)
+        const appids = items.map(i => i.appid).slice(0, 100)
+        let nameMap = {}
+        try {
+          const storeRes = await fetch(
+            `https://store.steampowered.com/api/appdetails?appids=${appids.join(',')}&filters=basic`
+          )
+          const storeData = await storeRes.json()
+          if (storeData) {
+            Object.entries(storeData).forEach(([appid, info]) => {
+              if (info?.success && info?.data?.name) nameMap[appid] = info.data.name
+            })
+          }
+        } catch {}
+
         return items.map(item => ({
           appid: String(item.appid),
-          title: item.name || `App ${item.appid}`,
+          title: nameMap[String(item.appid)] || item.name || `App ${item.appid}`,
           cover_url: `https://cdn.cloudflare.steamstatic.com/steam/apps/${item.appid}/header.jpg`,
           priority: item.priority || 999,
         })).sort((a, b) => a.priority - b.priority).slice(0, 100)
