@@ -1395,13 +1395,16 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {selectedFriend.steam_id && (
-                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}>
+                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(103,193,245,0.12)', border:'1px solid rgba(103,193,245,0.3)', color:'#67c1f5'}}>
                           <SteamIcon size={11} />
                           {selectedFriend.steam_username || 'Steam'}
                         </span>
                       )}
                       {selectedFriend.wow_character && (
-                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', color:'rgb(245,158,11)'}}>⚔️ {selectedFriend.wow_character}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(244,161,36,0.12)', border:'1px solid rgba(244,161,36,0.3)', color:'#f4a124'}}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l2 3-2 1-2-1 2-3zm-4 3l1.5 2.5L8 12l-1-3 1-1zm8 0l1 1-1 3-1.5-1.5L16 8zm-4 5l3 1.5-1 2.5H9l-1-2.5 3-1.5h1z"/></svg>
+                          {selectedFriend.wow_character}
+                        </span>
                       )}
                       {!selectedFriend.steam_id && !selectedFriend.wow_character && (
                         <span className="text-xs" style={{color:'var(--text-muted)'}}>Sin servicios vinculados</span>
