@@ -2165,7 +2165,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     ) : wishlistError ? (
                       <div className="flex flex-col items-center justify-center py-20 text-center">
                         <div className="text-sm mb-2" style={{color:'var(--text-muted)'}}>No se pudo cargar la wishlist</div>
-                        <div className="text-xs mb-4" style={{color:'var(--text-muted)', opacity:0.6}}>{wishlistError}</div>
+                        <div className="text-xs mb-4 max-w-xs" style={{color:'var(--text-muted)', opacity:0.6}}>
+                          El perfil de Steam puede ser privado. Para verla, {isOwner(selectedFriend?.id) ? 'andá a tu perfil de Steam → Editar perfil → Configuración de privacidad → Wishlist → Público.' : `${selectedFriend.name} tiene que hacer su wishlist pública en Steam.`}
+                        </div>
                         <button onClick={()=>fetchWishlist(selectedFriend.steam_id)}
                           className="text-xs px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-gray-200 transition-colors">
                           Reintentar
