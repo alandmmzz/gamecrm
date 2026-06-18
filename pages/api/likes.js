@@ -34,8 +34,26 @@ export default async function handler(req, res) {
       }
     }
 
-    // New like
+    // New like — insert and notify review owner
     await supabase.from('review_likes').insert({ review_id, friend_id, type })
+
+    // Get review owner to notify them
+    const { data: review } = await supabase
+      .from('reviews')
+      .select('friend_id, game_title')
+      .eq('id', review_id)
+      .single()
+
+    if (review && review.friend_id !== friend_id) {
+      await supabase.from('notifications').insert({
+        to_friend_id: review.friend_id,
+        from_friend_id: friend_id,
+        type: type === 'like' ? 'like' : 'dislike',
+        review_id,
+        game_title: review.game_title,
+      })
+    }
+
     return res.status(201).json({ action: 'added', type })
   }
 

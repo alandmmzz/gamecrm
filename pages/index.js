@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal, Star, MessageSquare, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Users, Zap, Sparkles, Layers, Settings, LogIn, LogOut, Search, Trash2, Pencil, X, RefreshCw, Plus, User, Trophy, ChevronRight, Gamepad2, Crown, Sun, Moon, Monitor, Medal, Star, MessageSquare, ThumbsUp, ThumbsDown, Bell } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import { getProfile, signOut } from '../lib/auth'
@@ -379,7 +379,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const router = useRouter()
   const [session, setSession] = useState(null)
   const [myProfile, setMyProfile] = useState(null)
-  const [view, setView] = useState('list') // 'list' | 'profile' | 'activity' | 'insights'
+  const [view, setView] = useState('list') // 'list' | 'profile' | 'notifications' | 'insights'
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -391,6 +391,11 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [adminView, setAdminView] = useState(true)
   const [reviews, setReviews] = useState([]) // all reviews
   const [expandedReviews, setExpandedReviews] = useState({}) // game title -> bool
+  const [notifications, setNotifications] = useState([])
+  const [notifTab, setNotifTab] = useState('notifs') // 'notifs' | 'activity'
+  const [wishlist, setWishlist] = useState([]) // { appid, title, cover_url }[]
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+  const [wishlistError, setWishlistError] = useState('')
   const [sortOrder, setSortOrder] = useState('hours') // 'hours' | 'alpha' | 'date'
   const [profileTab, setProfileTab] = useState('games') // 'games' | 'stats' | 'reviews' | 'activity'
 
@@ -483,6 +488,38 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       setReviews(Array.isArray(data) ? data : [])
     } catch {}
   }
+
+  const fetchNotifications = async (profileId) => {
+    if (!profileId) return
+    try {
+      const r = await fetch(`/api/notifications?friend_id=${profileId}`)
+      const data = await r.json()
+      setNotifications(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+
+  const markNotifsRead = async () => {
+    if (!myProfile?.id) return
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ friend_id: myProfile.id })
+    })
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const fetchWishlist = async (steamId) => {
+    if (!steamId) return
+    setWishlistLoading(true)
+    setWishlistError('')
+    try {
+      const r = await fetch(`/api/wishlist?steamid=${encodeURIComponent(steamId)}`)
+      const data = await r.json()
+      if (data.error) setWishlistError(data.error)
+      setWishlist(data.games || [])
+    } catch { setWishlistError('No se pudo cargar la wishlist') }
+    setWishlistLoading(false)
+  }
   useEffect(() => { fetchFriends(); fetchReviews() }, [])
 
   // Handle ?profile= param when returning from /review
@@ -508,11 +545,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           return
         }
         setMyProfile(profile)
-      }
-    }
-    initAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        fetchNotifications(profile.id)
       setSession(session)
       if (session) {
         const profile = await getProfile(session)
@@ -521,6 +554,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           return
         }
         setMyProfile(profile)
+        fetchNotifications(profile.id)
         fetchFriends()
       } else {
         setMyProfile(null)
@@ -996,21 +1030,32 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
           </div>
           <nav className="flex flex-col gap-1">
             {[
-              {t:'list', Icon:Users, label:'Amigos'},
-              {t:'activity', Icon:Zap, label:'Actividad'},
-              {t:'insights', Icon:Sparkles, label:'Insights'},
-              {t:'discover', Icon:Layers, label:'Descubrir'},
-            ].map(({t,Icon,label})=>(
-              <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left`}
+              {t:'list',          Icon:Users,    label:'Amigos'},
+              {t:'notifications', Icon:Bell,     label:'Notificaciones'},
+              {t:'insights',      Icon:Sparkles, label:'Insights'},
+              {t:'discover',      Icon:Layers,   label:'Descubrir'},
+            ].map(({t,Icon,label})=>{
+              const unread = t==='notifications' ? notifications.filter(n=>!n.read).length : 0
+              return (
+              <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}if(t==='notifications')markNotifsRead();setView(t);setSelected(null)}}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left relative`}
                 style={{
                   background: view===t||(view==='profile'&&t==='list') ? 'var(--nav-active-bg)' : 'transparent',
                   color: view===t||(view==='profile'&&t==='list') ? 'var(--text-nav-active)' : 'var(--text-nav)',
                   fontWeight: view===t||(view==='profile'&&t==='list') ? 500 : 400,
                 }}>
-                <Icon size={16} />{label}
+                <div className="relative flex-shrink-0">
+                  <Icon size={16} />
+                  {unread > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white flex items-center justify-center" style={{background:'#7F77DD', fontSize:'9px', fontWeight:600}}>
+                      {unread > 9 ? '9+' : unread}
+                    </span>
+                  )}
+                </div>
+                {label}
               </button>
-            ))}
+              )
+            })}
           </nav>
 
           {/* User section at bottom */}
@@ -1114,7 +1159,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                   const actives = f.games?.filter(g=>g.status==='playing')||[]
                   const totalH = (f.games||[]).reduce((s,g)=>s+(g.hours_played||0),0)
                   return (
-                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');setProfileTab('games');window.scrollTo({top:0,behavior:'smooth'})}}
+                    <div key={f.id} onClick={()=>{setSelected(f.id);setView('profile');setProfileTab('games');setWishlist([]);setWishlistError('');window.scrollTo({top:0,behavior:'smooth'})}}
                       className="p-4 rounded-xl cursor-pointer transition-all" style={{background:'var(--bg-card)',border:'1px solid var(--border)'}}
                       style={{background:"var(--bg-card)"}}>
                       <div className="flex items-center gap-3">
@@ -1274,6 +1319,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
               { id: 'stats',    label: 'Stats' },
               { id: 'activity', label: 'Actividad' },
               { id: 'reviews',  label: 'Reseñas' },
+              { id: 'wishlist', label: 'Wishlist' },
             ]
 
             return (
@@ -1319,7 +1365,7 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                       {isOwner(selectedFriend?.id) && (
                         <button onClick={()=>router.push('/settings')} title="Editar perfil"
                           className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all">
-                          <Settings size={16} />
+                          <Pencil size={15} />
                         </button>
                       )}
                       <button onClick={refreshCovers} disabled={refreshing} title="Actualizar información"
@@ -1339,7 +1385,12 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                 {/* Profile tabs */}
                 <div className="flex gap-1 mb-6 border-b border-white/5 pb-0">
                   {PROFILE_TABS.map(tab => (
-                    <button key={tab.id} onClick={()=>setProfileTab(tab.id)}
+                    <button key={tab.id} onClick={()=>{
+                      setProfileTab(tab.id)
+                      if (tab.id === 'wishlist' && selectedFriend?.steam_id && wishlist.length === 0) {
+                        fetchWishlist(selectedFriend.steam_id)
+                      }
+                    }}
                       className="px-4 py-2 text-sm font-medium transition-all relative"
                       style={{
                         color: profileTab===tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
@@ -1992,6 +2043,72 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     </div>
                   )
                 })()}
+
+                {/* TAB: Wishlist */}
+                {profileTab==='wishlist' && (
+                  <div>
+                    {!selectedFriend?.steam_id ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                          style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)'}}>
+                          <Gamepad2 size={24} style={{color:'#5DCAA5'}} />
+                        </div>
+                        <div className="text-base font-medium mb-2" style={{color:'var(--text-primary)'}}>Sin Steam vinculado</div>
+                        <div className="text-sm max-w-xs" style={{color:'var(--text-muted)'}}>
+                          {isOwner(selectedFriend?.id)
+                            ? 'Vinculá tu cuenta de Steam en ajustes para ver tu wishlist.'
+                            : `${selectedFriend.name} no tiene Steam vinculado.`}
+                        </div>
+                        {isOwner(selectedFriend?.id) && (
+                          <button onClick={()=>router.push('/settings')}
+                            className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                            style={{background:'rgba(93,202,165,0.12)', color:'#5DCAA5', border:'1px solid rgba(93,202,165,0.25)'}}>
+                            Ir a ajustes
+                          </button>
+                        )}
+                      </div>
+                    ) : wishlistLoading ? (
+                      <div className="flex items-center justify-center py-20">
+                        <div className="w-6 h-6 border-2 border-white/10 border-t-purple-400 rounded-full animate-spin" />
+                      </div>
+                    ) : wishlistError ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="text-sm mb-2" style={{color:'var(--text-muted)'}}>No se pudo cargar la wishlist</div>
+                        <div className="text-xs mb-4" style={{color:'var(--text-muted)', opacity:0.6}}>{wishlistError}</div>
+                        <button onClick={()=>fetchWishlist(selectedFriend.steam_id)}
+                          className="text-xs px-4 py-2 rounded-lg border border-white/10 text-gray-400 hover:text-gray-200 transition-colors">
+                          Reintentar
+                        </button>
+                      </div>
+                    ) : wishlist.length === 0 ? (
+                      <div className="text-center py-20 text-gray-500">La wishlist está vacía o es privada.</div>
+                    ) : (
+                      <div>
+                        <div className="text-xs mb-4" style={{color:'var(--text-muted)'}}>{wishlist.length} juego{wishlist.length !== 1 ? 's' : ''} en wishlist</div>
+                        <div className="space-y-2">
+                          {wishlist.map(g => (
+                            <div key={g.appid} className="flex items-center gap-3 p-3 rounded-xl border border-white/5 hover:border-white/10 transition-colors cursor-pointer"
+                              style={{background:'var(--bg-card)'}}
+                              onClick={()=>router.push(`/game/${encodeURIComponent(g.title)}`)}>
+                              <img src={g.cover_url} alt={g.title}
+                                className="w-16 h-9 rounded-lg object-cover flex-shrink-0"
+                                onError={e=>e.target.style.display='none'} />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm truncate" style={{color:'var(--text-primary)'}}>{g.title}</div>
+                                <a href={`https://store.steampowered.com/app/${g.appid}`} target="_blank" rel="noopener noreferrer"
+                                  onClick={e=>e.stopPropagation()}
+                                  className="text-xs transition-colors hover:opacity-80"
+                                  style={{color:'var(--text-muted)'}}>
+                                  Ver en Steam
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )
           })()}
@@ -2001,85 +2118,125 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
             <InsightsView friends={friends} />
           )}
 
-          {/* Activity tab */}
-          {view==='activity' && (() => {
-            // Merge games + reviews into one feed sorted by date
+          {/* Notifications view */}
+          {view==='notifications' && (() => {
+            const unreadCount = notifications.filter(n => !n.read).length
+
+            // Activity feed (same as before)
             const gameItems = allGames.map(g => ({
-              type: 'game',
-              date: new Date(g.last_played_at||g.started_at||g.created_at||0),
-              key: `game-${g.id}`,
-              data: g,
+              type: 'game', date: new Date(g.last_played_at||g.started_at||g.created_at||0), key: `game-${g.id}`, data: g,
             }))
             const reviewItems = reviews.map(r => {
               const friend = friends.find(f => f.id === r.friend_id)
-              const friendIdx = friends.findIndex(f => f.id === r.friend_id)
-              return {
-                type: 'review',
-                date: new Date(r.created_at||0),
-                key: `review-${r.id}`,
-                data: { ...r, friendName: friend?.name, friendAvatar: friend?.avatar_url, friendIdx },
-              }
+              return { type: 'review', date: new Date(r.created_at||0), key: `review-${r.id}`, data: { ...r, friendName: friend?.name, friendAvatar: friend?.avatar_url } }
             })
-            const feed = [...gameItems, ...reviewItems].sort((a,b) => b.date - a.date)
+            const activityFeed = [...gameItems, ...reviewItems].sort((a,b) => b.date - a.date)
+
+            const notifLabel = (n) => {
+              const name = n.from_friend?.name || 'Alguien'
+              if (n.type === 'like') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <span style={{color:'#5DCAA5'}}>👍</span> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
+              if (n.type === 'dislike') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> le dio <ThumbsDown size={11} className="inline" style={{color:'#E07B6A'}} /> a tu reseña de <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span></>
+              if (n.type === 'review_on_your_game') return <><span className="font-medium" style={{color:'var(--text-primary)'}}>{name}</span> reseñó <span className="font-medium" style={{color:'var(--text-primary)'}}>{n.game_title}</span>, un juego que vos también tenés</>
+              return null
+            }
 
             return (
-              <div className="space-y-2">
-                {feed.length === 0
-                  ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
-                  : feed.map(item => {
-                    if (item.type === 'game') {
-                      const g = item.data
-                      return (
-                        <div key={item.key} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
-                          {g.cover_url
-                            ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
-                            : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(g.friendName)}</div>
-                          }
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
-                            <div className="text-xs" style={{color:'var(--text-muted)'}}>
-                              {g.hours_played}h
-                              {(()=>{
-                                const lp = g.last_played_at||g.started_at
-                                const fin = g.finished_at
-                                if (lp) return ` · últ. vez ${fmtDate(lp)}`
-                                if (fin) return ` · fin ${fmtDate(fin)}`
-                                return ''
-                              })()}
-                            </div>
-                          </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
+              <div>
+                {/* Sub-tabs */}
+                <div className="flex gap-1 mb-5 border-b border-white/5 pb-0">
+                  {[
+                    { id: 'notifs', label: unreadCount > 0 ? `Para vos (${unreadCount})` : 'Para vos' },
+                    { id: 'activity', label: 'Actividad' },
+                  ].map(tab => (
+                    <button key={tab.id} onClick={() => setNotifTab(tab.id)}
+                      className="px-4 py-2 text-sm font-medium transition-all relative"
+                      style={{ color: notifTab===tab.id ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                      {tab.label}
+                      {notifTab===tab.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full" style={{background:'#7F77DD'}} />}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Para vos */}
+                {notifTab === 'notifs' && (
+                  <div className="space-y-2">
+                    {notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                          style={{background:'rgba(127,119,221,0.1)', border:'1px solid rgba(127,119,221,0.2)'}}>
+                          <Bell size={24} style={{color:'#7F77DD'}} />
                         </div>
-                      )
-                    }
-                    // type === 'review'
-                    const r = item.data
-                    return (
-                      <div key={item.key} className="flex items-start gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
-                        {r.friendAvatar
-                          ? <img src={r.friendAvatar} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
+                        <div className="text-base font-medium mb-1" style={{color:'var(--text-primary)'}}>Sin notificaciones</div>
+                        <div className="text-sm" style={{color:'var(--text-muted)'}}>Cuando alguien interactúe con tus reseñas, aparecerá acá.</div>
+                      </div>
+                    ) : notifications.map(n => (
+                      <div key={n.id}
+                        className="flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-pointer hover:border-white/10"
+                        style={{background: n.read ? 'var(--bg-card)' : 'rgba(127,119,221,0.06)', borderColor: n.read ? 'rgba(255,255,255,0.05)' : 'rgba(127,119,221,0.2)'}}
+                        onClick={() => n.game_title && router.push(`/game/${encodeURIComponent(n.game_title)}`)}>
+                        {n.from_friend?.avatar_url
+                          ? <img src={n.from_friend.avatar_url} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} />
                           : null}
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 avatar-initials"
-                          style={{display: r.friendAvatar ? 'none' : 'flex', fontSize:'10px'}}>
-                          {initials(r.friendName||'?')}
+                          style={{display: n.from_friend?.avatar_url ? 'none' : 'flex', fontSize:'10px'}}>
+                          {initials(n.from_friend?.name||'?')}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm mb-1" style={{color:'var(--text-secondary)'}}>
-                            <span className="text-gray-500">{r.friendName}</span> reseñó <span style={{color:'var(--text-primary)'}}>{r.game_title}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <StarDisplay value={r.rating} size={11} />
-                            <span className="text-xs font-medium" style={{color:'#EF9F27'}}>{r.rating}/5</span>
-                            {r.no_apto_angelitos && <span className="text-xs" title="No apto para angelitos">😇</span>}
-                          </div>
-                          {r.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{r.comment}</p>}
-                          <div className="text-xs mt-1" style={{color:'var(--text-muted)', opacity:0.6}}>{fmtDate(r.created_at)}</div>
+                          <div className="text-sm leading-relaxed" style={{color:'var(--text-muted)'}}>{notifLabel(n)}</div>
+                          <div className="text-xs mt-1" style={{color:'var(--text-muted)', opacity:0.5}}>{fmtDate(n.created_at)}</div>
                         </div>
-                        {r.game_cover && <img src={r.game_cover} alt={r.game_title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                        {!n.read && <span className="w-2 h-2 rounded-full flex-shrink-0 mt-2" style={{background:'#7F77DD'}} />}
                       </div>
-                    )
-                  })
-                }
+                    ))}
+                  </div>
+                )}
+
+                {/* Actividad */}
+                {notifTab === 'activity' && (
+                  <div className="space-y-2">
+                    {activityFeed.length === 0
+                      ? <div className="text-center py-16 text-gray-500">Sin actividad registrada.</div>
+                      : activityFeed.map(item => {
+                        if (item.type === 'game') {
+                          const g = item.data
+                          return (
+                            <div key={item.key} className="flex items-center gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                              {g.cover_url
+                                ? <img src={g.cover_url} alt={g.title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />
+                                : <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 avatar-initials">{initials(g.friendName)}</div>
+                              }
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{g.friendName}</span> — {g.title}</div>
+                                <div className="text-xs" style={{color:'var(--text-muted)'}}>
+                                  {g.hours_played}h{(()=>{const lp=g.last_played_at||g.started_at;const fin=g.finished_at;if(lp)return` · últ. vez ${fmtDate(lp)}`;if(fin)return` · fin ${fmtDate(fin)}`;return''})()}
+                                </div>
+                              </div>
+                              <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${gameBadge(g.status)}`}>{gameLabel(g.status)}</span>
+                            </div>
+                          )
+                        }
+                        const r = item.data
+                        return (
+                          <div key={item.key} className="flex items-start gap-3 p-3 rounded-xl border border-white/5" style={{background:"var(--bg-card)"}}>
+                            {r.friendAvatar ? <img src={r.friendAvatar} className="w-8 h-8 rounded-full object-cover flex-shrink-0 mt-0.5" onError={e=>{e.target.style.display='none';e.target.nextSibling.style.display='flex'}} /> : null}
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5 avatar-initials" style={{display: r.friendAvatar ? 'none' : 'flex', fontSize:'10px'}}>{initials(r.friendName||'?')}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm mb-1" style={{color:'var(--text-secondary)'}}><span className="text-gray-500">{r.friendName}</span> reseñó <span style={{color:'var(--text-primary)'}}>{r.game_title}</span></div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <StarDisplay value={r.rating} size={11} />
+                                <span className="text-xs font-medium" style={{color:'#EF9F27'}}>{r.rating}/5</span>
+                                {r.no_apto_angelitos && <span className="text-xs">😇</span>}
+                              </div>
+                              {r.comment && <p className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>{r.comment}</p>}
+                              <div className="text-xs mt-1" style={{color:'var(--text-muted)', opacity:0.6}}>{fmtDate(r.created_at)}</div>
+                            </div>
+                            {r.game_cover && <img src={r.game_cover} alt={r.game_title} className="w-8 h-10 rounded object-cover flex-shrink-0" onError={e=>e.target.style.display='none'} />}
+                          </div>
+                        )
+                      })
+                    }
+                  </div>
+                )}
               </div>
             )
           })()}
@@ -2513,17 +2670,27 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       )}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t border-white/5 flex z-40" style={{background:"var(--bg-bottombar)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)"}}>
         {[
-          {t:'list', Icon:Users, label:'Amigos'},
-          {t:'activity', Icon:Zap, label:'Actividad'},
-          {t:'insights', Icon:Sparkles, label:'Insights'},
-          {t:'discover', Icon:Layers, label:'Descubrir'},
-        ].map(({t,Icon,label})=>(
-          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}setView(t);setSelected(null)}}
+          {t:'list',          Icon:Users,    label:'Amigos'},
+          {t:'notifications', Icon:Bell,     label:'Notificaciones'},
+          {t:'insights',      Icon:Sparkles, label:'Insights'},
+          {t:'discover',      Icon:Layers,   label:'Descubrir'},
+        ].map(({t,Icon,label})=>{
+          const unread = t==='notifications' ? notifications.filter(n=>!n.read).length : 0
+          return (
+          <button key={t} onClick={()=>{if(t==='discover'){window.location.href='/discover';return;}if(t==='notifications')markNotifsRead();setView(t);setSelected(null)}}
             className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all ${view===t||(view==='profile'&&t==='list')?'text-white':'text-gray-600'}`}>
-            <Icon size={20} />
+            <div className="relative">
+              <Icon size={20} />
+              {unread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white flex items-center justify-center" style={{background:'#7F77DD', fontSize:'9px', fontWeight:600}}>
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </div>
             <span>{label}</span>
           </button>
-        ))}
+          )
+        })}
         <button onClick={()=>router.push('/settings')}
           className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs transition-all text-gray-600`}>
           <Settings size={20} />

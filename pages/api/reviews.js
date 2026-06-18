@@ -40,6 +40,25 @@ export default async function handler(req, res) {
       .single()
 
     if (error) return res.status(500).json({ error: error.message })
+
+    // Notify friends who also have this game
+    const { data: friendsWithGame } = await supabase
+      .from('games')
+      .select('friend_id')
+      .ilike('title', game_title)
+      .neq('friend_id', friend_id)
+
+    if (friendsWithGame?.length) {
+      const notifs = friendsWithGame.map(g => ({
+        to_friend_id: g.friend_id,
+        from_friend_id: friend_id,
+        type: 'review_on_your_game',
+        review_id: data.id,
+        game_title,
+      }))
+      await supabase.from('notifications').insert(notifs)
+    }
+
     return res.status(201).json(data)
   }
 
