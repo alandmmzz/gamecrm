@@ -32,6 +32,8 @@ function SteamIcon({ size = 14 }) {
     </svg>
   )
 }
+
+function LikeButtons({ review, myProfileId, onUpdate }) {
   const likes = (review.review_likes || []).filter(l => l.type === 'like')
   const dislikes = (review.review_likes || []).filter(l => l.type === 'dislike')
   const myLike = (review.review_likes || []).find(l => l.friend_id === myProfileId)
