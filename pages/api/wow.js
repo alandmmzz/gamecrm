@@ -45,34 +45,47 @@ export default async function handler(req, res) {
     const charSlug = character.toLowerCase()
     const realmSlug = await resolveRealmSlug(region, realm, token)
     const locale = region === 'eu' ? 'es_ES' : 'en_US'
-    const q = `?namespace=profile-${region}&locale=${locale}&access_token=${token}`
 
-    // Fetch character summary
-    const summaryUrl = `${base}/profile/wow/character/${realmSlug}/${charSlug}${q}`
-    console.log('[WoW API] fetching:', summaryUrl.replace(token, 'TOKEN'))
-    const [summaryRes, equipRes, raidsRes] = await Promise.all([
-      fetch(summaryUrl),
-      fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/equipment${q}`),
-      fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
-    ])
-    const summaryText = await summaryRes.text()
-    console.log('[WoW API] status:', summaryRes.status, 'body:', summaryText.slice(0,300))
+    // Try retail, classic (SoD/Cata), classic era
+    const namespaces = [
+      `profile-${region}`,
+      `profile-classic-${region}`,
+      `profile-classic1x-${region}`,
+    ]
 
-    if (!summaryText || summaryText.trim() === '') {
-      return res.status(500).json({ error: `HTTP ${summaryRes.status} — respuesta vacía de Blizzard. URL: /profile/wow/character/${realmSlug}/${charSlug}` })
+    let summary = null
+    let usedNamespace = ''
+
+    for (const ns of namespaces) {
+      const q = `?namespace=${ns}&locale=${locale}&access_token=${token}`
+      const url = `${base}/profile/wow/character/${realmSlug}/${charSlug}${q}`
+      console.log('[WoW API] trying namespace:', ns)
+      try {
+        const r = await fetch(url)
+        if (r.status !== 200) continue
+        const text = await r.text()
+        if (!text) continue
+        const parsed = JSON.parse(text)
+        if (parsed.name) { summary = parsed; usedNamespace = ns; break }
+      } catch {}
     }
 
-    let summary
-    try { summary = JSON.parse(summaryText) }
-    catch (e) { return res.status(500).json({ error: `Respuesta inválida de Blizzard (HTTP ${summaryRes.status}): ${summaryText.slice(0,200)}` }) }
-
-    if (summary.code === 404 || summary.code === 403 || summary.status === 404) {
-      return res.status(404).json({ error: `Personaje no encontrado. Realm: "${realmSlug}", Char: "${charSlug}". Respuesta: ${JSON.stringify(summary).slice(0,150)}` })
+    if (!summary) {
+      return res.status(404).json({ error: `Personaje "${charSlug}" no encontrado en realm "${realmSlug}" (retail, classic ni classic era). Verificá el nombre y reino exactos.` })
     }
 
+    const q = `?namespace=${usedNamespace}&locale=${locale}&access_token=${token}`
+
+    // Fetch equipment and raids with working namespace
     let equip = {}, raids = {}
-    try { equip = await equipRes.json() } catch {}
-    try { raids = await raidsRes.json() } catch {}
+    try {
+      const [equipRes, raidsRes] = await Promise.all([
+        fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/equipment${q}`),
+        fetch(`${base}/profile/wow/character/${realmSlug}/${charSlug}/encounters/raids${q}`),
+      ])
+      equip = await equipRes.json().catch(()=>({}))
+      raids = await raidsRes.json().catch(()=>({}))
+    } catch {}
 
     // Get current raid progress (latest expansion)
     let raidProgress = null
