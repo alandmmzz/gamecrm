@@ -22,6 +22,15 @@ export default async function handler(req, res) {
       }
     }
 
+    // Get player summary (username + avatar)
+    const summaryRes = await fetch(
+      `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${key}&steamids=${resolvedId}`
+    )
+    const summaryData = await summaryRes.json()
+    const player = summaryData.response?.players?.[0]
+    const steam_username = player?.personaname || null
+    const steam_avatar = player?.avatarfull || null
+
     // Get owned games
     const gamesRes = await fetch(
       `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${resolvedId}&include_appinfo=true&include_played_free_games=true`
@@ -63,7 +72,7 @@ export default async function handler(req, res) {
       } catch {}
     }))
 
-    return res.status(200).json({ games, total: games.length })
+    return res.status(200).json({ games, total: games.length, steam_username, steam_avatar, resolved_steamid: resolvedId })
   } catch (e) {
     return res.status(500).json({ error: e.message })
   }

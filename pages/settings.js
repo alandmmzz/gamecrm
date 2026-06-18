@@ -12,6 +12,16 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
   const [myProfile, setMyProfile] = useState(null)
   const [adminView, setAdminView] = useState(true)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarSaving, setAvatarSaving] = useState(false)
+
+  const useAvatarFrom = async (url) => {
+    if (!url || !myProfile?.id) return
+    setAvatarSaving(true)
+    await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: myProfile.id, avatar_url: url }) })
+    setMyProfile(p => ({...p, avatar_url: url}))
+    setAvatarSaving(false)
+  }
   const [editingName, setEditingName] = useState(false)
   const [nameValue, setNameValue] = useState('')
   const [nameSaving, setNameSaving] = useState(false)
@@ -169,6 +179,43 @@ export default function SettingsPage({ theme, usingSystem, setThemeValue }) {
                   <div className="text-xs mt-0.5" style={{color: avatarError ? 'rgb(239,68,68)' : 'var(--text-muted)'}}>
                     {avatarUploading ? 'Subiendo...' : avatarError || 'Tocá la foto para cambiarla'}
                   </div>
+                  {/* Avatar source options */}
+                  {(() => {
+                    const sources = []
+                    if (myProfile?.steam_id && myProfile?.steam_username) {
+                      // Steam avatar — we stored it during import but need to re-fetch or use a placeholder
+                      sources.push({ label: `Steam (${myProfile.steam_username})`, key: 'steam', url: null, fetchUrl: `/api/steam?steamid=${myProfile.steam_id}&avatar_only=1` })
+                    }
+                    const oauthAvatar = session?.user?.user_metadata?.avatar_url
+                    const provider = session?.user?.app_metadata?.provider
+                    if (oauthAvatar) {
+                      sources.push({ label: provider === 'github' ? 'GitHub' : provider === 'google' ? 'Google' : 'OAuth', key: 'oauth', url: oauthAvatar })
+                    }
+                    if (!sources.length) return null
+                    return (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {sources.map(s => (
+                          <button key={s.key} disabled={avatarSaving}
+                            onClick={async () => {
+                              if (s.url) { useAvatarFrom(s.url); return }
+                              if (s.key === 'steam') {
+                                setAvatarSaving(true)
+                                try {
+                                  const r = await fetch(`/api/steam_avatar?steamid=${myProfile.steam_id}`)
+                                  const d = await r.json()
+                                  if (d.avatar) await useAvatarFrom(d.avatar)
+                                } catch {}
+                                setAvatarSaving(false)
+                              }
+                            }}
+                            className="text-xs px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                            style={{background:'var(--bg-card-hover)', border:'1px solid var(--border)', color:'var(--text-muted)'}}>
+                            Usar foto de {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
               {/* Edit name */}

@@ -420,6 +420,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
   const [gameInfo, setGameInfo] = useState(null)
   const [gameInfoLoading, setGameInfoLoading] = useState(false)
   const [steamId, setSteamId] = useState('')
+  const [steamUsername, setSteamUsername] = useState('')
+  const [steamAvatarUrl, setSteamAvatarUrl] = useState('')
+  const [resolvedSteamId, setResolvedSteamId] = useState('')
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [newUserName, setNewUserName] = useState('')
   const [newUserSteam, setNewUserSteam] = useState('')
@@ -626,6 +629,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       if (data.error) { setSteamError(data.error); setSteamLoading(false); return }
       const games = data.games || []
       setSteamGames(games)
+      if (data.steam_username) setSteamUsername(data.steam_username)
+      if (data.steam_avatar) setSteamAvatarUrl(data.steam_avatar)
+      if (data.resolved_steamid) setResolvedSteamId(data.resolved_steamid)
       // Pre-select all except already existing
       const sel = {}
       games.forEach(g => { sel[g.appid] = true })
@@ -724,14 +730,18 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
       }
       await fetchFriends()
     }
-    // Save steam_id to friend profile
+    // Save steam_id and steam_username to friend profile
     if (selected && steamId.trim()) {
       await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ id: selected, steam_id: steamId.trim() })
+        body: JSON.stringify({
+          id: selected,
+          steam_id: resolvedSteamId || steamId.trim(),
+          steam_username: steamUsername || null,
+        })
       })
     }
     setSteamImporting(false); setSteamProgress(''); setModal(null)
-    setSteamId(''); setSteamGames([]); setSelectedSteamGames({})
+    setSteamId(''); setSteamGames([]); setSelectedSteamGames({}); setSteamUsername(''); setSteamAvatarUrl(''); setResolvedSteamId('')
     showSuccess('Steam importado ✓')
   }
 
@@ -928,6 +938,35 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
     const games = f.games || []
     if (!games.length) { setRefreshProgress('Sin juegos'); setTimeout(()=>setRefreshProgress(''),2000); return }
     setRefreshing(true)
+
+    // Sync Steam hours + achievements if steam_id is set
+    if (f.steam_id) {
+      setRefreshProgress('Sincronizando Steam...')
+      try {
+        const r = await fetch('/api/steam?steamid=' + encodeURIComponent(f.steam_id))
+        const steamData = await r.json()
+        const steamGames = steamData.games || []
+        // Update steam_username if we got it
+        if (steamData.steam_username && steamData.steam_username !== f.steam_username) {
+          await fetch('/api/friends', { method: 'PATCH', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ id: f.id, steam_username: steamData.steam_username }) })
+        }
+        for (const sg of steamGames) {
+          const match = games.find(g => g.title.toLowerCase() === sg.title?.toLowerCase())
+          if (match && (sg.hours_played !== match.hours_played || sg.achievement_pct !== match.achievement_pct)) {
+            const patch = {
+              id: match.id,
+              ...(sg.hours_played != null && { hours_played: sg.hours_played }),
+              ...(sg.achievement_pct != null && { achievement_pct: sg.achievement_pct }),
+              ...(sg.last_played_at && { last_played_at: sg.last_played_at }),
+            }
+            if (Object.keys(patch).length > 1) {
+              await fetch('/api/games', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(patch) })
+            }
+          }
+        }
+      } catch (e) { console.error('steam sync error', e) }
+    }
     const updatedGenres = {} // accumulate genres across all games
     for (let i = 0; i < games.length; i++) {
       const g = games[i]
@@ -1348,7 +1387,9 @@ export default function Home({ theme, usingSystem, setThemeValue }) {
                     <h2 className="text-2xl font-semibold text-white">{selectedFriend.name}</h2>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {selectedFriend.steam_id && (
-                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}><Gamepad2 size={11} /> Steam</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(93,202,165,0.1)', border:'1px solid rgba(93,202,165,0.2)', color:'rgb(93,202,165)'}}>
+                          <Gamepad2 size={11} /> {selectedFriend.steam_username || 'Steam'}
+                        </span>
                       )}
                       {selectedFriend.wow_character && (
                         <span className="text-xs px-2 py-0.5 rounded-full flex items-center gap-1" style={{background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)', color:'rgb(245,158,11)'}}>⚔️ {selectedFriend.wow_character}</span>
